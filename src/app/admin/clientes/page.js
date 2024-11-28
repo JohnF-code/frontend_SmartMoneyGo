@@ -97,7 +97,7 @@ export default function Page() {
   
   return (
     <>
-      <h2 className='text-3xl font-extrabold mb-10 text-center lg:text-start'>Lista de Clientes</h2>
+      <h2 className='text-black dark:text-white text-3xl font-extrabold mb-10 text-center lg:text-start'>Lista de Clientes</h2>
 
       <div className='mx-auto mb-5'>
         <div className='w-[95%] lg:w-auto mx-auto flex flex-col lg:p-5'>
@@ -116,7 +116,7 @@ export default function Page() {
           
           <div className="my-2 overflow-x-auto rounded-lg max-w-[95vw] lg:max-w-[70vw] xl:max-w-[80vw] lg:mx-4">
             <div className="inline-block min-w-full py-2 align-middle md:px-6 lg:px-8">
-              <div className="overflow-hidden border border-gray-200 dark:border-gray-700 md:rounded-lg">
+              <div className="overflow-hidden border border-gray-300 dark:border-gray-500 md:rounded-lg">
                 <table className='table min-w-full text-start font-light text-surface dark:text-white w-full'>
                   <thead className='border-b border-neutral-200 bg-[#332D2D] font-medium text-white dark:border-white/10'>
                     <tr>
@@ -144,18 +144,18 @@ export default function Page() {
                             key={index}
                           >
                             <tr
-                              className="border-b border-neutral-200 dark:border-white/10 hover:bg-white cursor-pointer"
+                              className="border-b border-neutral-200 dark:border-white/10 hover:bg-white dark:hover:bg-gray-800 cursor-pointer"
                               onClick={() => selectClient(cliente)}
                               key={index}
                             >
-                              <td className="whitespace-nowrap text-lg  px-6 py-4 font-extrabold">{index}</td>
+                              <td className="text-black dark:text-white whitespace-nowrap text-lg  px-6 py-4 font-extrabold">{index}</td>
 
-                              <td className="whitespace-nowrap text-lg px-6 py-4">{name}</td>
-                              <td className="whitespace-nowrap text-lg  px-6 py-4 hidden md:block">{document}</td>
+                              <td className="text-black dark:text-white whitespace-nowrap text-lg px-6 py-4">{name}</td>
+                              <td className="text-black dark:text-white whitespace-nowrap text-lg  px-6 py-4 hidden md:block">{document}</td>
                             </tr>
                             {moreInfo && client._id === cliente._id ? (
                               <tr
-                                className="bg-white justify-start text-start w-full"
+                                className="text-black dark:text-white bg-white dark:bg-slate-700 justify-start text-start w-full"
                               >
                                 <td colSpan="3" className="whitespace-nowrap text-lg p-4">
                                    <p className='mb-2'>Nombre: <span className='font-bold text-lg'>{client.name}</span></p>

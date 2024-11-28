@@ -61,25 +61,25 @@ const ModalInfo = ({ showInfo, setShowInfo, loan, client }) => {
               <div className='p-4 md:p-5'>
                 <div className='grid gap-5 mb-4 grid-cols-2'>
                     <div>
-                        <p className='text-sm md:text-xl font-light'>
+                        <p className='text-sm md:text-xl font-light text-black dark:text-white'>
                           Nombre:
                           <span className='font-bold'> {client.name}</span>
                         </p>
                     </div>
                     <div>
-                        <p className='text-sm md:text-xl font-light'>
+                        <p className='text-sm md:text-xl font-light text-black dark:text-white'>
                           Contacto:
                           <span className='font-bold'> {client.contact}</span>
                         </p>
                     </div>
                     <div>
-                        <p className='text-sm md:text-xl font-light'>
+                        <p className='text-sm md:text-xl font-light text-black dark:text-white'>
                           Cedula:
                           <span className='font-bold'> {client.document}</span>
                         </p>
                     </div>
                     <div>
-                        <p className='text-sm md:text-xl font-light'>
+                        <p className='text-sm md:text-xl font-light text-black dark:text-white'>
                           Fecha:
                           <span className='font-bold'> {formatearFecha(client.date)}</span>
                         </p>

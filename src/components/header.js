@@ -6,6 +6,7 @@ import { useAuth } from '../hooks/useAuth';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faBars } from '@fortawesome/free-solid-svg-icons';
 import { usePathname } from 'next/navigation';
+import ThemeToggle from "@component/components/ThemeToggle";
 
 const Header = () => {
 
@@ -19,7 +20,7 @@ const Header = () => {
       <div className="max-w-screen-xl flex flex-wrap items-center justify-between mx-auto p-4">
         <Link
           href="/"
-          className='text-2xl font-bold'
+          className='text-black text-2xl font-bold dark:text-white'
         >SmartMoneyGo</Link>
         <button
           type="button"
@@ -30,6 +31,7 @@ const Header = () => {
         >
             <FontAwesomeIcon icon={faBars} className='text-3xl text-black'/>
         </button>
+        <ThemeToggle />
         <nav className={`${hide ? 'hidden' : 'block'} w-full lg:hidden" id="navbar-default`}>
           <ul className="font-medium flex flex-col p-4 md:p-0 mt-4 border border-gray-100 rounded-lg bg-gray-50 dark:bg-gray-800 dark:border-gray-700 ">
             {user.role !== 'cobrador' ?

@@ -13,38 +13,38 @@ const Sidebar = () => {
   console.log(currentLocation);
 
   return (
-    <aside className="w-64 bg-white shadow-md hidden lg:block">
+    <aside className="w-64 bg-white shadow-md hidden lg:block dark:bg-slate-900">
       <div className="p-6">
-        <h1 className="text-2xl font-semibold">Dashboard</h1>
+        <h1 className="text-black text-2xl font-semibold dark:text-white">Dashboard</h1>
       </div>
       <nav className="mt-10">
         {user.role !== 'cobrador' ?
-          <Link href="/admin/dashboard" className={`block py-2.5 px-4 transition duration-200 hover:bg-gray-200 ${currentLocation === '/admin/dashboard' ? 'bg-blue-700 text-white' : 'text-gray-900'}`}>
+          <Link href="/admin/dashboard" className={`block py-2.5 px-4 transition duration-200 hover:bg-gray-400 dark:text-white ${currentLocation === '/admin/dashboard' ? 'bg-blue-700 text-white' : 'text-gray-900'}`}>
             Dashboard
           </Link>
           : ''}
-        <Link href="/admin/clientes" className={`block py-2.5 px-4 transition duration-200 hover:bg-gray-200 ${currentLocation === '/admin/clientes' ? 'bg-blue-700 text-white' : 'text-gray-900'}`}>
+        <Link href="/admin/clientes" className={`block py-2.5 px-4 transition duration-200 hover:bg-gray-400 dark:text-white ${currentLocation === '/admin/clientes' ? 'bg-blue-700 text-white' : 'text-gray-900'}`}>
           Clientes
         </Link>
 
-        <Link href="/admin/prestamos" className={`block py-2.5 px-4 transition duration-200 hover:bg-gray-200 ${currentLocation === '/admin/prestamos' ? 'bg-blue-700 text-white' : 'text-gray-900'}`}>
+        <Link href="/admin/prestamos" className={`block py-2.5 px-4 transition duration-200 hover:bg-gray-400 dark:text-white ${currentLocation === '/admin/prestamos' ? 'bg-blue-700 text-white' : 'text-gray-900'}`}>
           Prestamos
         </Link>
      
-          <Link href="/admin/historial" className={`block py-2.5 px-4 transition     duration-200 hover:bg-gray-200 ${currentLocation === '/admin/historial' ? 'bg-blue-700 text-white' : 'text-gray-900'}`}>
+          <Link href="/admin/historial" className={`block py-2.5 px-4 transition     duration-200 hover:bg-gray-400 dark:text-white ${currentLocation === '/admin/historial' ? 'bg-blue-700 text-white' : 'text-gray-900'}`}>
             Historial De Clientes
           </Link>
     
-         <Link href="/admin/pagos" className={`block py-2.5 px-4 transition duration-200 hover:bg-gray-200 ${currentLocation === '/admin/pagos' ? 'bg-blue-700 text-white' : 'text-gray-900'}`}>
+         <Link href="/admin/pagos" className={`block py-2.5 px-4 transition duration-200 hover:bg-gray-400 dark:text-white ${currentLocation === '/admin/pagos' ? 'bg-blue-700 text-white' : 'text-gray-900'}`}>
           Pagos
         </Link>
         {user.role === 'finanzas' || user.role === 'administrador' ?
-          <Link href="/admin/finanzas" className={`block py-2.5 px-4 transition duration-200 hover:bg-gray-200 ${currentLocation === '/admin/finanzas' ? 'bg-blue-700 text-white' : 'text-gray-900'}`}>
+          <Link href="/admin/finanzas" className={`block py-2.5 px-4 transition duration-200 hover:bg-gray-400 dark:text-white ${currentLocation === '/admin/finanzas' ? 'bg-blue-700 text-white' : 'text-gray-900'}`}>
             Finanzas
           </Link>
           : ''}
         {user.role === 'administrador' ?
-          <Link href="/admin/users" className={`block py-2.5 px-4 transition duration-200 hover:bg-gray-200 ${currentLocation === '/admin/users' ? 'bg-blue-700 text-white' : 'text-gray-900'}`}>
+          <Link href="/admin/users" className={`block py-2.5 px-4 transition duration-200 hover:bg-gray-400 dark:text-white ${currentLocation === '/admin/users' ? 'bg-blue-700 text-white' : 'text-gray-900'}`}>
             Usuarios
           </Link>
         : ''}

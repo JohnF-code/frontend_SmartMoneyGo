@@ -1,5 +1,5 @@
 import { useState } from "react"
-import { formatearFecha } from "@component/helpers";
+import { formatearFecha, formatearNumero } from "@component/helpers";
 
 const LoanItem = ({loan, index}) => {
 
@@ -28,7 +28,7 @@ const LoanItem = ({loan, index}) => {
             </li>
             <li className="inline-flex items-center">
                 <span className="py-3">
-                <p className="text-gray-800 text-sm">{loan.loanAmount}</p>
+                <p className="text-gray-800 text-sm">{formatearNumero(loan.loanAmount)}</p>
                     <p className="hidden md:table-cell text-xs text-gray-500 font-medium">Dinero Prestado</p>
                 </span>
             </li>
@@ -42,13 +42,13 @@ const LoanItem = ({loan, index}) => {
               <li className='p-2 font-bold'>
                   <p className="font-light text-sm md:text-base">
                       Cantidad:
-                      <span className="font-bold"> ${loan.loanAmount}</span>
+                      <span className="font-bold"> ${formatearNumero(loan.loanAmount)}</span>
                   </p>
               </li>
               <li className='p-2 font-bold'>
                   <p className="font-light text-sm md:text-base">
                       Saldo:
-                      <span className="font-bold"> ${loan.balance}</span>
+                      <span className="font-bold"> ${formatearNumero(loan.balance)}</span>
                   </p>
               </li>
               <li className='p-2 font-bold'>

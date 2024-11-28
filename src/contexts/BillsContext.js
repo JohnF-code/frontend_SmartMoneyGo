@@ -4,56 +4,59 @@ import React, { createContext, useEffect, useState } from 'react';
 import axios from '@component/config/axios';
 import Swal from 'sweetalert2';
 import moment from 'moment';
+import { io } from 'socket.io-client';
 
 const BillsContext = createContext();
 
 const BillsProvider = ({ children }) => {
   const [bills, setBills] = useState([]);
 
+  // Función para obtener los gastos
   const getBills = async () => {
     try {
       const token = window.localStorage.getItem('token');
-       const config = {
+      const config = {
         headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${token}`
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`
         }
-      }
+      };
       const res = await axios('/bills', config);
       setBills(res.data);
     } catch (error) {
       console.log(error);
     }
-  }
+  };
 
+  // Función para agregar un gasto
   const addBill = async (bill) => {
     try {
       const token = window.localStorage.getItem('token');
-       const config = {
+      const config = {
         headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${token}`
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`
         }
-      }
-      // Agregar Gasto
-      const response = await axios.post('/bills', bill, config);
+      };
+      // Agregar gasto
+      await axios.post('/bills', bill, config);
 
-      // Obtener Gastos
+      // Obtener gastos
       getBills();
     } catch (error) {
       console.log(error);
     }
-  }
+  };
 
+  // Función para eliminar un gasto
   const deleteBill = id => {
     const token = window.localStorage.getItem('token');
-    
     const config = {
-        headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${token}`
-        }
-    }
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`
+      }
+    };
 
     Swal.fire({
       title: "¿Estas seguro?",
@@ -76,13 +79,45 @@ const BillsProvider = ({ children }) => {
       }
     }).catch((error) => {
       console.log(error);
-    })
-  }
+    });
+  };
+
+  useEffect(() => {
+    const socketUrl = process.env.NEXT_PUBLIC_STOCK_IO_URL || 'http://localhost:5000';
+    const socket = io(socketUrl); // Conexión al servidor WebSocket
+
+    // Escuchar el evento 'billUpdated' (ya existente)
+    socket.on('billUpdated', (data) => {
+        console.log(data.message); // Depuración
+
+        if (data.bill) {
+            setBills((prevBills) => [...prevBills, data.bill]);
+        }
+    });
+
+    // Escuchar el evento 'billDeleted'
+    socket.on('billDeleted', (data) => {
+        console.log(data.message); // Depuración
+
+        if (data.billId) {
+            // Remover el gasto eliminado de la lista
+            setBills((prevBills) => prevBills.filter((bill) => bill._id !== data.billId));
+        } else {
+            console.warn("El evento 'billDeleted' no contiene un ID válido");
+        }
+    });
+
+    // Desconectar al desmontar el componente
+    return () => {
+        socket.disconnect();
+    };
+}, []);
+
+
 
   useEffect(() => {
     getBills();
-  }, [])
-  
+  }, []);
 
   return (
     <BillsContext.Provider value={{

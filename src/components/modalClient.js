@@ -111,7 +111,7 @@ const ModalClient = ({ showModal, setShowModal, client, cleanClient }) => {
         
         // Close Modal
         setShowModal(false);
-        toast.success('Cliente Añadido Correctamente!');
+        
     }
 
     const handleClose = () => {

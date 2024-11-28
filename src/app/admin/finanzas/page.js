@@ -16,11 +16,15 @@ import ModalPendingPayments from '@component/components/modalPendingPayments';
 import TodayPaymentsModal from '@component/components/todayPaymentsModal';
 import ModalBill from '@component/components/modalBill';
 import ModalWidthdrawal from '@component/components/modalWidthdrawal';
+import { BillsContext } from '@component/contexts/BillsContext';
+import { WithdrawalContext } from '@component/contexts/WithdrawalContext';
 
 export default function Finanzas() {
 
     const paymentsContext = useContext(PaymentsContext);
     const { getPayments, getCapital, capital, payments } = paymentsContext;
+    const { bills } = useContext(BillsContext);
+    const { withdrawals } = useContext(WithdrawalContext);
 
     const loansContext = useContext(LoansContext);
     const { loans, getLoans } = loansContext;
@@ -61,7 +65,7 @@ export default function Finanzas() {
                 setPendingPayments(pagosPendientes);
 
                 // Obtener pagos realizados hoy
-                paymentsToday();
+                paymentsToday(paymentsPromise);
 
                 // Obtener pagos agrupados por mes
                 const monthPayments = agruparPagosPorMes(payments);
@@ -86,14 +90,15 @@ export default function Finanzas() {
         return loans.reduce((total, loan) => loan.installmentValue + total, 0);
     }
 
-    const paymentsToday = () => {
+    const paymentsToday = (payments) => {
         const hoy = new Date();
         hoy.setHours(0, 0, 0, 0);
 
         const today = payments.filter(payment => {
             const paymentDate = new Date(payment.date);
             paymentDate.setHours(0, 0, 0, 0);
-            return paymentDate.toDateString() === hoy.toDateString()
+            console.log(paymentDate, '====>', hoy);
+            return paymentDate.getTime() === hoy.getTime()
         });
 
         setTodayPayments(today);
@@ -155,39 +160,33 @@ export default function Finanzas() {
     //     saldoHoy = recaudo - prestamos
     //     totalSaldo += saldoHoy
 
+    const totalRetiros = () => {
+        return withdrawals.reduce((total, current) => current.amount + total, 0);
+      }
+
+    const totalBills = () => {
+        return bills.reduce((total, current) => current.amount + total, 0);
+      }
+
+    const capitalInvertido = () => {
+        return capital.reduce((total, current) => current.capital + total, 0);
+      }
+
+    const totalPayments = () => {
+        return payments.reduce((total, payment) => payment.amount + total, 0);
+      } 
+
     const calcSaldoCaja = () => {
-        const loansToday = createdLoansToday();
-
-        const paymentsByDate = agruparPorDia(payments);
-        const loansByDate = agruparPorDia(loans);
-
-        let saldo = 0;
-        let i = 0;
-        while (i < Object.keys(loansByDate).length) {
-      
-            const currentDate = Object.keys(loansByDate)[i];
-
-            const totalLoans = loansByDate[currentDate].reduce((total, loan) => (loan.installmentValue * loan.installments) + total, 0);
-            if(!paymentsByDate[currentDate]) {
-                saldo -= totalLoans;
-            } else {
-                const totalPayments = paymentsByDate[currentDate].reduce((total, payment) => payment.amount + total, 0);
-
-                const currentBalance = totalPayments - totalLoans;
-
-                saldo += currentBalance;
-            }
-
-           
-            i++;
-        }
-
+        const prestado = loans.reduce((total, prestamo) => {
+            return total + prestamo.loanAmount;
+          }, 0);
+          const saldo = capitalInvertido() - prestado - totalBills() + totalPayments() - totalRetiros();
         return saldo;
     }
 
   return (
       <div className='container max-w-[95%] sm:max-w-full mx-auto'>
-          <h2 className='text-3xl mb-8'>Finanzas</h2>
+          <h2 className='text-black dark:text-white text-3xl mb-8 font-extrabold'>Finanzas</h2>
           
           {user.role === 'administrador' || user.role === 'finanzas' ?
               <Statistics
@@ -229,73 +228,73 @@ export default function Finanzas() {
 
           <main className='flex flex-col lg:flex-row gap-x-5 mx-auto'>
             <div className='flex flex-col mb-6'>
-                <div className='mb-2 bg-white rounded-2xl p-4 min-w-24'>
-                    <h4 className='text-lg font-bold border-b-2 border-slate-300'>Resúmen de hoy</h4>
+                <div className='mb-2 bg-white rounded-2xl p-4 min-w-24 dark:bg-slate-900'>
+                    <h4 className='text-black dark:text-white text-lg font-bold border-b-2 border-slate-300'>Resúmen de hoy</h4>
                     <div className='grid grid-cols-2'>
                           <button
                             type='button'
-                            className='p-2 text-start cursor-pointer rounded-md hover:bg-slate-100'
+                            className='p-2 text-start cursor-pointer rounded-md hover:bg-slate-100 dark:hover:bg-blue-700'
                             onClick={() => setShowPending(true)}
                           >
-                            <span className='text-slate-500 text-sm'>Pagos pendientes hoy</span>
-                              <p className='font-bold text-lg'>$
+                            <span className='text-slate-500 dark:text-slate-300 text-sm'>Pagos pendientes hoy</span>
+                              <p className='text-black dark:text-white font-bold text-lg'>$
                                   {parseInt(amountPendingPayments())}
                               </p>  
                         </button>
                           <button
                               type='button'
-                              className='p-2 text-start rounded-md hover:bg-slate-100 cursor-pointer'
+                              className='p-2 text-start rounded-md hover:bg-slate-100 dark:hover:bg-blue-700 cursor-pointer'
                               onClick={() => setShowModalTomorrow(true)}
                           >
-                            <span className='text-slate-500 text-sm'>Pendientes mañana</span>
-                              <p className='font-bold text-lg'>${parseInt(tomorrowPayments())}</p>  
+                            <span className='text-slate-500 dark:text-slate-300 text-sm'>Pendientes mañana</span>
+                              <p className='text-black dark:text-white font-bold text-lg'>${parseInt(tomorrowPayments())}</p>  
                           </button>
                           <button
                             type='button'
-                            className='p-2 text-start rounded-md hover:bg-slate-100 cursor-pointer'
+                            className='p-2 text-start rounded-md hover:bg-slate-100 dark:hover:bg-blue-700 cursor-pointer'
                             onClick={() => setShowTodayModal(true)}
                           >
-                            <span className='text-slate-500 text-sm'>Recaudo hoy</span>
-                              <p className='font-bold text-lg'>${parseInt(raisedMoneyToday())}</p>  
+                            <span className='text-slate-500 dark:text-slate-300 text-sm'>Recaudo hoy</span>
+                              <p className='text-black dark:text-white font-bold text-lg'>${parseInt(raisedMoneyToday())}</p>  
                           </button>
                           <div
-                            className='text-start p-2 rounded-md hover:bg-slate-100 cursor-pointer'
+                            className='text-start p-2 rounded-md hover:bg-slate-100 dark:hover:bg-blue-700 cursor-pointer'
                           >
-                            <span className='text-slate-500 text-sm'>Saldo Caja</span>
-                            <p className='font-bold text-lg'>${parseInt(calcSaldoCaja())}</p>
+                            <span className='text-slate-500 dark:text-slate-300 text-sm'>Saldo Caja</span>
+                            <p className='text-black dark:text-white font-bold text-lg'>${parseInt(calcSaldoCaja())}</p>
                           </div>
                           <div className='p-2'>
-                            <span className='text-slate-500 text-sm'>Registrados hoy</span>
-                              <p className='font-bold text-lg'>{todayPayments.length}</p>  
+                            <span className='text-slate-500 dark:text-slate-300 text-sm'>Registrados hoy</span>
+                              <p className='text-black dark:text-white font-bold text-lg'>{todayPayments.length}</p>  
                           </div>
                     </div>
                 </div>
                 {user.role === 'finanzas' || user.role === 'administrador' ?
-                    <div className='bg-white rounded-2xl p-4'>
-                        <h4 className='text-lg font-bold border-b-2 border-slate-300'>Resúmen del mes</h4>
+                    <div className='bg-white rounded-2xl p-4 dark:bg-slate-900'>
+                        <h4 className='text-lg font-bold border-b-2 border-slate-300 text-black dark:text-white'>Resúmen del mes</h4>
                         <div className='grid grid-cols-2'>
                             <div className='p-2'>
                                 <span className='text-slate-500 text-sm'>Dinero Recaudado</span>
-                                <p className='font-bold text-lg'>${calclMonthPayments(payments)}</p>  
+                                <p className='text-black dark:text-white font-bold text-lg'>${calclMonthPayments(payments)}</p>  
                             </div>
                             <div className='p-2'>
                                 <span className='text-slate-500 text-sm'>Prestamos Creados</span>
-                                <p className='font-bold text-lg'>{monthCreatedLoans(loans)}</p>  
+                                <p className='text-black dark:text-white font-bold text-lg'>{monthCreatedLoans(loans)}</p>  
                             </div>
                             <div className='p-2'>
                                 <span className='text-slate-500 text-sm'>Impagos</span>
-                                <p className='font-bold text-lg'>{parseInt(calcularMontoNoRecaudado(clientes))}</p>  
+                                <p className='text-black dark:text-white font-bold text-lg'>{parseInt(calcularMontoNoRecaudado(clientes))}</p>  
                             </div>
                             <div className='p-2'>
                                 <span className='text-slate-500 text-sm'>Pagos registrados en el mes</span>
-                                <p className='font-bold text-lg'>{parseInt(calcPostPayments(payments))}</p>  
+                                <p className='text-black dark:text-white font-bold text-lg'>{parseInt(calcPostPayments(payments))}</p>  
                             </div>
                         </div>
                     </div>
                 : ''}
             </div>
             {user.role === 'administrador' || user.role === 'finanzas' ?
-                <div className='flex-col w-full bg-white p-4 shadow-sm rounded-lg mb-6'>
+                <div className='flex-col w-full p-4 shadow-sm rounded-lg mb-6'>
                     <GraficaDePagos
                         pagosPorMes={pagosPorMes}
                         impagos={impagos}

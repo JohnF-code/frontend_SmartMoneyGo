@@ -9,6 +9,7 @@ import { BillsContext } from '@component/contexts/BillsContext';
 import ModalBill from './modalBill';
 import { WithdrawalContext } from '@component/contexts/WithdrawalContext';
 import { ClientsContext } from '@component/contexts/ClientsContext';
+import { formatearNumero } from '@component/helpers';
 
 const Statistics = ({ capital, payments }) => {
 
@@ -47,8 +48,7 @@ const Statistics = ({ capital, payments }) => {
   
   const totalGanancias = () => {
     const earnings = loans.reduce((total, loan) => {
-      const prestado = loan.installments * loan.installmentValue;
-      const interes = prestado * loan.interest / 100;
+      const interes = loan.loanAmount * loan.interest / 100;
       return total + interes;
     }, 0);
 
@@ -56,7 +56,10 @@ const Statistics = ({ capital, payments }) => {
   }
 
   const capitalDisponible = () => {
-    const disponible = capitalInvertido() - totalPrestamos() - totalBills() + totalPayments() - totalRetiros();
+    const prestado = loans.reduce((total, prestamo) => {
+      return total + prestamo.loanAmount;
+    }, 0);
+    const disponible = capitalInvertido() - prestado - totalBills() + totalPayments() - totalRetiros();
     return disponible;
   }
 
@@ -83,36 +86,36 @@ const Statistics = ({ capital, payments }) => {
           type='button'
           className='flex gap-5 p-4 rounded-xl hover:transform hover:scale-110 hover:border-slate-300 hover:border-4'
           onClick={() => setShowModalCapital(true)}
-          style={{backgroundColor: '#1efff026'}}
+          style={{backgroundColor: '#1efff026', textAlign: 'left'}}
         >
           <FontAwesomeIcon icon={faSackDollar} className='text-5xl lg:text-7xl text-violet-600' />
             <div>
-              <h3 className='text-sm font-light'>Total Capital Invertido</h3>
-              <p className='font-bold text-2xl xl:text-3xl'>{capitalInvertido()}</p>
+              <h3 className='text-black dark:text-white text-sm font-light'>Total Capital Invertido</h3>
+              <p className='text-black dark:text-white font-bold text-2xl xl:text-3xl'>{formatearNumero(capitalInvertido())}</p>
             </div>
         </button>
         <button
           type='button'
           className='flex gap-5 p-4 rounded-xl hover:transform hover:scale-110 hover:border-slate-300 hover:border-4'
           onClick={() => setShowModalBill(true)}
-          style={{backgroundColor: '#1efff026'}}
+          style={{backgroundColor: '#1efff026', textAlign: 'left'}}
         >
           <FontAwesomeIcon icon={faCreditCard} className='text-5xl lg:text-7xl text-yellow-500' />
           <div>
-            <h3 className='text-sm font-light'>Total Gastos</h3>
-            <p className='font-bold text-2xl xl:text-3xl'>{totalBills()}</p>
+            <h3 className='text-black dark:text-white text-sm font-light'>Total Gastos</h3>
+            <p className='text-black dark:text-white font-bold text-2xl xl:text-3xl'>{formatearNumero(totalBills())}</p>
           </div>
         </button>
         <button
           type='button'
           className='flex gap-5 p-4 rounded-xl hover:transform hover:scale-110 hover:border-slate-300 hover:border-4'
           onClick={() => setShowModalWithdraw(true)}
-          style={{backgroundColor: '#1efff026'}}
+          style={{backgroundColor: '#1efff026', textAlign: 'left'}}
         >
           <FontAwesomeIcon icon={faHandHoldingDollar} className='text-5xl lg:text-7xl text-green-600' />
             <div>
-              <h3 className='text-sm font-light'>Total Retiros</h3>
-              <p className='font-bold text-2xl xl:text-3xl'>{totalRetiros()}</p>
+              <h3 className='text-black dark:text-white text-sm font-light'>Total Retiros</h3>
+              <p className='text-black dark:text-white font-bold text-2xl xl:text-3xl'>{formatearNumero(totalRetiros())}</p>
             </div>
         </button>
         <div
@@ -121,8 +124,8 @@ const Statistics = ({ capital, payments }) => {
         >
           <FontAwesomeIcon icon={faCoins} className='text-5xl lg:text-7xl text-violet-600' />
             <div>
-              <h3 className='text-sm font-light'>Total Capital</h3>
-              <p className='font-bold text-2xl xl:text-3xl'>{parseInt(totalCapital())}</p>
+              <h3 className='text-black dark:text-white text-sm font-light'>Total Capital</h3>
+              <p className='text-black dark:text-white font-bold text-2xl xl:text-3xl'>{formatearNumero(parseInt(totalCapital()))}</p>
             </div>
         </div>
         <Link
@@ -132,8 +135,8 @@ const Statistics = ({ capital, payments }) => {
         >
           <FontAwesomeIcon icon={faDollarSign} className='text-5xl lg:text-7xl text-blue-500' />
           <div>
-              <h3 className='text-sm font-light'>Total Facturado</h3>
-              <p className='font-bold text-2xl xl:text-3xl'>{totalPayments()}</p>
+              <h3 className='text-black dark:text-white text-sm font-light'>Total Facturado</h3>
+              <p className='text-black dark:text-white font-bold text-2xl xl:text-3xl'>{formatearNumero(totalPayments())}</p>
           </div>
         </Link>
         <div
@@ -142,8 +145,8 @@ const Statistics = ({ capital, payments }) => {
         >
           <FontAwesomeIcon icon={faMoneyBillTrendUp} className='text-5xl lg:text-7xl text-blue-500' />
           <div>
-              <h3 className='text-sm font-light'>Ganancias</h3>
-              <p className='font-bold text-2xl xl:text-3xl'>{parseInt(totalGanancias())}</p>
+              <h3 className='text-black dark:text-white text-sm font-light'>Ganancias</h3>
+              <p className='text-black dark:text-white font-bold text-2xl xl:text-3xl'>{formatearNumero(parseInt(totalGanancias()))}</p>
           </div>
         </div>
         <div
@@ -152,8 +155,8 @@ const Statistics = ({ capital, payments }) => {
         >
           <FontAwesomeIcon icon={faMoneyBillTransfer} className='text-5xl lg:text-7xl text-blue-500' />
           <div>
-            <h3 className='text-sm font-light'>Total Prestamos</h3>
-            <p className='font-bold text-2xl xl:text-3xl'>{parseInt(totalPrestamos())}</p>
+            <h3 className='text-black dark:text-white text-sm font-light'>Total Prestamos</h3>
+            <p className='text-black dark:text-white font-bold text-2xl xl:text-3xl'>{formatearNumero(parseInt(totalPrestamos()))}</p>
           </div>
         </div>
         <div
@@ -162,8 +165,8 @@ const Statistics = ({ capital, payments }) => {
         >
           <FontAwesomeIcon icon={faMoneyCheckDollar} className='text-5xl lg:text-7xl text-violet-600' />
           <div>
-              <h3 className='text-sm font-light'>Capital Disponible</h3>
-              <p className='font-bold text-2xl xl:text-3xl'>{parseInt(capitalDisponible())}</p>
+              <h3 className='text-black dark:text-white text-sm font-light'>Capital Disponible</h3>
+              <p className='text-black dark:text-white font-bold text-2xl xl:text-3xl'>{formatearNumero(parseInt(capitalDisponible()))}</p>
           </div>
         </div>
         <div
@@ -172,8 +175,8 @@ const Statistics = ({ capital, payments }) => {
         >
           <FontAwesomeIcon icon={faChartLine} className='text-5xl lg:text-7xl text-blue-500' />
           <div>
-              <h3 className='text-sm font-light'>Ganancias Disponibles</h3>
-              <p className='font-bold text-2xl xl:text-3xl'>{parseInt(gananciasDisponibles())}</p>
+              <h3 className='text-black dark:text-white text-sm font-light'>Ganancias Disponibles</h3>
+              <p className='text-black dark:text-white font-bold text-2xl xl:text-3xl'>{formatearNumero(parseInt(gananciasDisponibles()))}</p>
           </div>
         </div>
       </div>
@@ -188,8 +191,8 @@ const Statistics = ({ capital, payments }) => {
         >
           <FontAwesomeIcon icon={faCircleUser} className='text-5xl lg:text-7xl text-green-600' />
           <div>
-              <h3 className='text-sm font-light'>Total Clientes</h3>
-            <p className='font-bold text-2xl xl:text-3xl'>{clients.length}</p>
+              <h3 className='text-black dark:text-white text-sm font-light'>Total Clientes</h3>
+            <p className='text-black dark:text-white font-bold text-2xl xl:text-3xl'>{clients.length}</p>
           </div>
         </Link>
         <Link
@@ -199,8 +202,8 @@ const Statistics = ({ capital, payments }) => {
         >
           <FontAwesomeIcon icon={faMoneyBill1} className='text-5xl lg:text-7xl text-green-600' />
           <div>
-              <h3 className='text-sm font-light'>Total Prestamos</h3>
-            <p className='font-bold text-2xl xl:text-3xl'>{loans.length}</p>
+              <h3 className='text-black dark:text-white text-sm font-light'>Total Prestamos</h3>
+            <p className='text-black dark:text-white font-bold text-2xl xl:text-3xl'>{loans.length}</p>
           </div>
         </Link>
       </div>

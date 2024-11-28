@@ -165,7 +165,7 @@ const ModalLoan = ({ showLoan, setShowLoan, selectedClient, setSelectedClient, p
               {/* Modal Body */}
              {showForm ?  
               <form className="p-4 md:p-5" onSubmit={handleSubmit}>
-                <p className='text-lg text-center uppercase font-light mb-5'>{client.name || ''}</p>
+                <p className='text-lg text-center uppercase font-light mb-5 text-black dark:text-white'>{client.name || ''}</p>
                 { alert ? (
                     <div className='p-2 bg-red-200 text-center mb-2'>
                         <p className='text-red-600 font-black'>{message}</p>
@@ -203,7 +203,7 @@ const ModalLoan = ({ showLoan, setShowLoan, selectedClient, setSelectedClient, p
               </form> : (
                 <div className='p-3'>
                     <form>
-                        <h4 className='p-4 font-bold text-lg'>Ingresa número de cedula</h4>
+                        <h4 className='text-black dark:text-white p-4 font-bold text-lg'>Ingresa número de cedula</h4>
                         { alert ? (
                             <div className='p-2 bg-red-200 text-center mb-2'>
                                 <p className='text-red-600 font-black'>{message}</p>

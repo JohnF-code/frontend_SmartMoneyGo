@@ -29,7 +29,7 @@ const Pagination = ({ itemsPerPage, payments }) => {
     
     return (
         <div>
-            <ul className='bg-white'>
+            <ul className='bg-white dark:bg-slate-900'>
                 {currentPayments.map((payment, index) => (
                     <Payment
                         key={payment._id}

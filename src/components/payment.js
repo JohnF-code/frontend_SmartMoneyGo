@@ -1,5 +1,5 @@
 import { useContext, useState } from 'react'
-import { formatearFecha } from '../helpers';
+import { formatearFecha, formatearNumero } from '../helpers';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faTrashCan } from '@fortawesome/free-solid-svg-icons';
 import { PaymentsContext } from '@component/contexts/PaymentsContext';
@@ -14,22 +14,22 @@ const Payment = ({ payment, index }) => {
     
   return (
     <li>
-        <ul className="flex items-center justify-between px-20 lg:px-44 accordion border-b border-grey-light hover:bg-gray-100 cursor-pointer" onClick={() => setPanel(!panel)}>
+        <ul className="flex items-center justify-between px-20 lg:px-44 accordion border-b border-grey-light hover:bg-gray-100 dark:hover:bg-blue-800 cursor-pointer" onClick={() => setPanel(!panel)}>
         <li className="table-cell py-2">
             <p className='inline-flex items-center font-bold text-emerald-500'>${payment?.amount}</p>
-            <p className="text-xs text-gray-500 font-medium">Cantidad</p>
+            <p className="text-xs text-gray-500 font-medium dark:text-white">Cantidad</p>
         </li>
         <li className="md:table-cell">
-            <p className="text-sm text-gray-800 font-medium">{payment.clientId?.name}</p>
-            <p className="text-xs text-gray-500 font-medium">Nombre</p>
+            <p className="text-sm text-gray-800 font-medium dark:text-gray-400">{payment.clientId?.name}</p>
+            <p className="text-xs text-gray-500 font-medium dark:text-white">Nombre</p>
         </li>
         <li className="hidden md:table-cell">
-            <p className="text-sm text-gray-800 font-medium">{formatearFecha(payment?.date)}</p>
-            <p className="text-xs text-gray-500 font-medium">Fecha</p>
+            <p className="text-sm text-gray-800 font-medium dark:text-gray-400">{formatearFecha(payment?.date)}</p>
+            <p className="text-xs text-gray-500 font-medium dark:text-white">Fecha</p>
         </li>
         </ul>
         <ul className={`${!panel ? 'hidden' : ''} table-row w-full`}>
-            <li className='flex flex-col p-5'>
+            <li className='text-black dark:text-white flex flex-col p-5'>
                 <h3 className='mb-4 text-xl font-black'>Datos Prestamo</h3>   
                 <p className='py-2 border-b-2'>Nombre: <span className='font-bold'>{payment.clientId?.name}</span></p>
 
@@ -37,7 +37,7 @@ const Payment = ({ payment, index }) => {
         
                 <p className='py-2 border-b-2'>Teléfono: <span className='font-bold'>{payment.clientId?.contact}</span></p>
                   
-                <p className='py-2 border-b-2'>Dinero prestado: <span className='font-bold'>{payment.loanId?.loanAmount}</span></p>
+                <p className='py-2 border-b-2'>Dinero prestado: <span className='font-bold'>{formatearNumero(payment.loanId?.loanAmount)}</span></p>
                   
                   <p className='py-2 border-b-2'>Intereses: <span className='font-bold'>{payment.loanId?.interest}%</span></p>
 

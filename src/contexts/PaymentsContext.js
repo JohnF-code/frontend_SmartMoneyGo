@@ -1,15 +1,40 @@
 "use client";
 // src/contexts/ClientsContext.js
-import React, { createContext, useState } from 'react';
+import React, { createContext, useState, useEffect } from 'react';
 import axios from '@component/config/axios';
 import Swal from 'sweetalert2';
 import { toast } from 'react-toastify';
+import io from 'socket.io-client'; // Importar socket.io
 
 const PaymentsContext = createContext();
 
 const PaymentsProvider = ({ children }) => {
   const [payments, setPayments] = useState([]);
   const [capital, setCapital] = useState([]);
+
+  // Conectar con el servidor WebSocket
+  useEffect(() => {
+    const socketUrl = process.env.NEXT_PUBLIC_STOCK_IO_URL || 'http://localhost:5000';
+    const socket = io(socketUrl); // Conexión al servidor WebSocket
+
+    // Escuchar eventos de WebSocket
+    socket.on('paymentUpdated', (data) => {
+      console.log(data.message); // Mostrar el mensaje de los eventos
+      getPayments(); // Refrescar los pagos
+      toast.success(data.message); // Mostrar una notificación de éxito
+    });
+
+    // Escuchar el evento 'financeUpdated' desde el backend
+    socket.on('financeUpdated', (data) => {
+      console.log(data.message);  // Muestra el mensaje para depuración
+      getCapital();   // Vuelve a cargar el capital
+    });
+
+
+    return () => {
+      socket.disconnect(); // Limpiar la conexión cuando el componente se desmonte
+    };
+  }, []);
   
   const getPayments = async () => {
     const token = window.localStorage.getItem('token');

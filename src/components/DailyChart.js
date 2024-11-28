@@ -38,7 +38,7 @@ const DailyChart = ({ dailyGrossEarnings }) => {
 
   return (
     <div className="bg-white p-4 shadow-sm rounded-lg">
-      <h2 className="text-lg font-semibold mb-4">Ganancias Mensuales</h2>
+      <h2 className="text-lg font-semibold mb-4 ">Ganancias Mensuales</h2>
       <Line data={data} />
     </div>
   );

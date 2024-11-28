@@ -477,3 +477,8 @@ export const calculateLoansPerMonth = (clients) => {
     }, {}); // El objeto vacío es el valor inicial del acumulador
 };
 
+export function formatearNumero(numero) {
+    const numeroFormateado = new Intl.NumberFormat('es-ES').format(numero);
+    return numeroFormateado;
+  }
+

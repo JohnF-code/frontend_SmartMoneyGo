@@ -41,25 +41,25 @@ const FilterPayments = ({ payments, itemsPerPage }) => {
         <div>
             <div className="mb-4 flex">
                 <button
-                    className={`px-4 py-2 mr-2 flex-1 ${filter === 'all' ? 'bg-blue-500 text-white' : 'bg-gray-300'}`}
+                    className={`text-black dark:text-white rounded-lg px-4 py-2 mr-2 flex-1 ${filter === 'all' ? 'bg-blue-500 text-white' : 'bg-gray-400 dark:bg-gray-500'}`}
                     onClick={() => setFilter('all')}
                 >
                     Todos
                 </button>
                 <button
-                    className={`px-4 py-2 mr-2 flex-1 ${filter === 'today' ? 'bg-blue-500 text-white' : 'bg-gray-300'}`}
+                    className={`text-black dark:text-white rounded-lg px-4 py-2 mr-2 flex-1 ${filter === 'today' ? 'bg-blue-500 text-white' : 'bg-gray-400 dark:bg-gray-500'}`}
                     onClick={() => setFilter('today')}
                 >
                     Hoy
                 </button>
                 <button
-                    className={`px-4 py-2 mr-2 flex-1 ${filter === 'lastWeek' ? 'bg-blue-500 text-white' : 'bg-gray-300'}`}
+                    className={`text-black dark:text-white rounded-lg px-4 py-2 mr-2 flex-1 ${filter === 'lastWeek' ? 'bg-blue-500 text-white' : 'bg-gray-400 dark:bg-gray-500'}`}
                     onClick={() => setFilter('lastWeek')}
                 >
                     Última Semana
                 </button>
                 <button
-                    className={`px-4 py-2 flex-1 ${filter === 'lastMonth' ? 'bg-blue-500 text-white' : 'bg-gray-300'}`}
+                    className={`text-black dark:text-white rounded-lg px-4 py-2 flex-1 ${filter === 'lastMonth' ? 'bg-blue-500 text-white' : 'bg-gray-400 dark:bg-gray-500'}`}
                     onClick={() => setFilter('lastMonth')}
                 >
                     Último Mes

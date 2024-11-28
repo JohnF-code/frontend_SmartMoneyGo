@@ -13,6 +13,13 @@ export default function Page() {
   useEffect(() => {
     getPayments();
   }, []);
+
+  useEffect(() => {
+    filterPayments({
+      preventDefault: ()=>{}
+    });
+  }, [search])
+  
   
   useEffect(() => {
     setCurrentPayments(payments);
@@ -34,17 +41,17 @@ export default function Page() {
   return (
      <main className="container mx-auto pt-4 px-4 py-16 ">
       <section className="container">
-        <h2 className="text-2xl mb-8">
+        <h2 className="text-black dark:text-white text-2xl mb-8 font-extrabold">
           Pagos Registrados
         </h2>
         <form
           className='py-4 w-full flex'
           onSubmit={filterPayments}
         >
-          <input type='text' className='text-lg py-2 px-4 flex-1' placeholder='buscar por nombre o cédula...' onChange={e => setSearch(e.target.value.toLowerCase())}/>
+          <input type='text' className='rounded-l-lg text-black dark:text-white text-text-lg py-2 px-4 flex-1 dark:bg-gray-800' placeholder='Buscar por nombre o cédula...' onChange={e => setSearch(e.target.value.toLowerCase())}/>
           <button
             type='submit'
-            className='py-2 text-lg px-4 bg-cyan-500 text-white font-bold'
+            className='rounded-r py-2 text-lg px-4 bg-cyan-500 text-white font-bold'
           >Buscar Pago</button>
         </form>
         <div style={{ overflowX: 'auto' }}>

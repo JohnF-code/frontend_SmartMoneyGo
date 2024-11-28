@@ -3,6 +3,7 @@
 import React, { createContext, useEffect, useState } from 'react';
 import axios from '@component/config/axios';
 import Swal from 'sweetalert2';
+import io from 'socket.io-client'; // Importar socket.io
 
 const LoansContext = createContext();
 
@@ -11,6 +12,25 @@ const LoansProvider = ({ children }) => {
   const [currentClient, setCurrentClient] = useState({});
   const [loading, setLoading] = useState(true);
   const [token, setToken] = useState('');
+
+  // Conexión con el servidor WebSocket
+  useEffect(() => {
+    setToken(window.localStorage.getItem('token'));
+    getLoans();
+
+    const socketUrl = process.env.NEXT_PUBLIC_STOCK_IO_URL || 'http://localhost:5000';
+    const socket = io(socketUrl); // Conexión al servidor WebSocket
+
+    // Escuchar el evento 'loanUpdated' emitido por el servidor
+    socket.on('loanUpdated', (data) => {
+      console.log('Préstamo actualizado:', data.message); // Imprimir el mensaje del evento
+      getLoans(); // Llamar a getLoans para actualizar la lista de préstamos
+    });
+
+    return () => {
+      socket.disconnect(); // Limpiar la conexión WebSocket cuando el componente se desmonte
+    };
+  }, []);
   
   useEffect(() => {
     setToken(window.localStorage.getItem('token'));

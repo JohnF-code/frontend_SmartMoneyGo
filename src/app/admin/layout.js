@@ -27,9 +27,9 @@ export default function AdminLayout({ children }) {
         {user?._id ? (
           <div className="min-h-screen bg-slate-50 flex">
             <Sidebar />
-            <div className="flex-1 flex flex-col">
+            <div className="flex-1 flex flex-col dark:bg-slate-700">
               <Header />
-                <main className="lg:p-6 flex-1">
+                <main className="lg:p-6 flex-1 dark:bg-slate-700">
                     {children}
                 </main>
             </div>

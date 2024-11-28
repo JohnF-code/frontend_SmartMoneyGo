@@ -5,11 +5,27 @@ import axios from '@component/config/axios';
 import Swal from 'sweetalert2';
 import moment from 'moment';
 import { toast } from 'react-toastify';
+import { io } from 'socket.io-client';
 
 const WithdrawalContext = createContext();
 
 const WithdrawalProvider = ({ children }) => {
   const [withdrawals, setWithdrawals] = useState([]);
+  
+  useEffect(() => {
+    const socketUrl = process.env.NEXT_PUBLIC_STOCK_IO_URL || 'http://localhost:5000';
+    const socket = io(socketUrl); // Conexión al servidor WebSocket
+
+    // Escuchar el evento 'withdrawalUpdated' emitido por el servidor
+    socket.on('withdrawalUpdated', (data) => {
+      console.log('Retiro actualizado:', data.message);
+      getWithdrawals(); // Actualizar los retiros cuando se recibe el evento
+    });
+
+    return () => {
+      socket.disconnect(); // Limpiar la conexión cuando el componente se desmonte
+    };
+  }, []);
 
   const getWithdrawals = async () => {
     try {

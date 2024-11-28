@@ -6,10 +6,10 @@ import { AuthContext } from '@component/contexts/AuthContext';
 import ModalPayments from '@component/components/modalPayments';
 import Searcher from '@component/components/searcher';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
-import { faPen, faTrashCan, faX } from '@fortawesome/free-solid-svg-icons'
+import { faArrowCircleLeft, faArrowLeft, faPen, faTrashCan, faX } from '@fortawesome/free-solid-svg-icons'
 import { ToastContainer } from 'react-toastify';
 import ModalLoan from '@component/components/modalLoan';
-import { formatearFecha } from '@component/helpers';
+import { formatearFecha, formatearNumero } from '@component/helpers';
 
 export default function Page() {
 
@@ -89,7 +89,7 @@ export default function Page() {
 
   return (
     <>
-      <h2 className='text-3xl font-extrabold mb-10 text-center lg:text-start'>Prestamos Activos</h2>
+      <h2 className='text-black dark:text-white text-3xl font-extrabold mb-10 text-center lg:text-start'>Prestamos Activos</h2>
 
       <div className='mx-auto mb-5'>
         
@@ -108,7 +108,7 @@ export default function Page() {
           </div>
           <div className="my-2 overflow-x-auto rounded-lg max-w-[95vw] lg:max-w-[70vw] xl:max-w-[80vw] mx-auto lg:mx-4">
             <div className="inline-block min-w-full py-2 align-middle md:px-6 lg:px-8">
-              <div className="overflow-hidden border border-gray-200 dark:border-gray-700 md:rounded-lg">
+              <div className="overflow-hidden border border-gray-300 dark:border-gray-500 md:rounded-lg">
                 <table className='table min-w-full text-start font-light text-surface dark:text-white w-full'>
                   <thead className='border-b border-neutral-200 bg-[#332D2D] font-medium text-white dark:border-white/10'>
                     <tr>
@@ -133,22 +133,23 @@ export default function Page() {
                           >
                             <tr
                               key={loan._id}
-                              className="border-b border-neutral-200 dark:border-white/10 hover:bg-white cursor-pointer"
+                              className="border-b border-neutral-200 dark:border-white/10 hover:bg-white dark:hover:bg-gray-800 cursor-pointer"
                               onClick={() => selectLoan(loan)}
                             >
-                               <td className="whitespace-nowrap text-lg  px-6 py-4">{clientId?.name}</td>
+                               <td className="text-black dark:text-white whitespace-nowrap text-lg  px-6 py-4">{clientId?.name}</td>
                                <td className=''>
                                  <button
                                     type='button'
                                     className='text-white bg-gradient-to-r from-green-500 via-green-600 to-green-700 hover:bg-gradient-to-br focus:ring-4 focus:outline-none focus:ring-green-300 dark:focus:ring-green-800 shadow-lg shadow-green-500/50 dark:shadow-lg dark:shadow-green-800/80 font-medium rounded-full text-sm px-5 py-2.5 text-center me-2 mb-2'
                                     onClick={() => handlePayment(loan)}
+                                    onDou
                                 >$</button>
                               </td>
-                               <td className="whitespace-nowrap text-lg  px-6 py-4">{description}</td>
+                               <td className="text-black dark:text-white whitespace-nowrap text-lg  px-6 py-4">{description}</td>
                               {/* <td className="whitespace-nowrap text-lg  px-6 py-4">{((loanAmount * (interest / 100) + loanAmount) / installments).toFixed(2)}</td> */}
                              </tr>
                              {moreInfo && prestamo._id === loan._id ? (
-                              <tr className="bg-white justify-start text-start w-full">
+                              <tr className="text-black dark:text-white bg-white justify-start text-start w-full dark:bg-slate-700">
                                 <td
                                    colSpan="3"
                                    className="whitespace-nowrap text-lg p-4"
@@ -156,9 +157,9 @@ export default function Page() {
                                   <p className='mb-2'>Descripción: <span className='font-bold text-lg'>{description}</span></p>
                                   <p className='mb-2'>CC: <span className='font-bold text-lg'>{clientId.document}</span></p>
                                    <p className='mb-2'>Contacto: <span className='font-bold text-lg'>{clientId.contact}</span></p>
-                                   <p className='mb-2'>Prestamo: <span className='font-bold text-lg'>{loanAmount}</span></p>
-                                   <p className='mb-2'>Saldo: <span className='font-bold text-lg'>{balance}</span></p>
-                                   <p className='mb-2'>Monto de cúota: <span className='font-bold text-lg'>{installmentValue}</span></p>
+                                   <p className='mb-2'>Prestamo: <span className='font-bold text-lg'>{formatearNumero(loanAmount)}</span></p>
+                                   <p className='mb-2'>Saldo: <span className='font-bold text-lg'>{formatearNumero(balance)}</span></p>
+                                   <p className='mb-2'>Monto de cúota: <span className='font-bold text-lg'>{formatearNumero(installmentValue)}</span></p>
                                    <p className='mb-2'>Cuotas: <span className='font-bold text-lg'>{installments}</span>
                                    </p>
                                   <p className='mb-2'>Interés: <span className='font-bold text-lg'>{interest}%</span></p>

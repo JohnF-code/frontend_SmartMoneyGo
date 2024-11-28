@@ -18,15 +18,15 @@ export default function Page() {
 
   const clientsContext = useContext(ClientsContext);
   const { clients, getClients } = clientsContext;
-  
+
   const [montlyEarnings, setMontlyEarnings] = useState([]);
   const [netMontlyEarnings, setNetMontlyEarnings] = useState([]);
-  
+
   const [dailyGrossEarnings, setDailyGrossEarnings] = useState([]);
   const [dailyNetEarnings, setDailyNetEarnings] = useState([]);
-  
+
   const [loansPerMonth, setLoansPerMonth] = useState({});
-  
+
   useEffect(() => {
     const get = async () => {
       await getPayments();
@@ -36,19 +36,18 @@ export default function Page() {
 
     get();
   }, [])
-  
   useEffect(() => {
     setNetMontlyEarnings(calculateNetMonthlyEarnings(payments, capital));
     setMontlyEarnings(calculateMonthlyEarnings(payments));
     setDailyGrossEarnings(calculateDailyGrossEarningsLast7Days(payments));
     setDailyNetEarnings(calculateDailyNetEarningsLast7Days(payments, capital))
     setLoansPerMonth(calculateLoansPerMonth(clients));
-  }, [payments, capital])
-  
-    
+  }, [payments, capital, clients])
+
+
   return (
     <div className='max-w-[95%] lg:max-w-full mx-auto'>
-      <h2 className='text-3xl mb-8'>Dashboard</h2>
+      <h2 className='text-black dark:text-white text-3xl mb-8 font-extrabold'>Dashboard</h2>
       <Link
         href={'/admin/prestamos'}
         className='inline-block p-4 bg-amber-400 mb-10 text-2xl rounded-lg hover:border-4 hover:border-amber-200 font-bold text-white hover:bg-amber-500'
@@ -62,13 +61,12 @@ export default function Page() {
         />
         Pagos Pendientes
       </Link>
-      
       <Statistics
         capital={capital}
         payments={payments}
       />
 
-      <div className="flex flex-col lg:flex-row gap-6 items-stretch lg:items-start">
+      <div className="flex flex-col lg:flex-row gap-6 items-stretch lg:items-start dark:text-black">
         <div className='flex-1'>
           <Chart
             netEarnings={netMontlyEarnings}
