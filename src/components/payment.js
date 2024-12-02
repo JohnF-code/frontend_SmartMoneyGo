@@ -16,7 +16,7 @@ const Payment = ({ payment, index }) => {
     <li>
         <ul className="flex items-center justify-between px-20 lg:px-44 accordion border-b border-grey-light hover:bg-gray-100 dark:hover:bg-blue-800 cursor-pointer" onClick={() => setPanel(!panel)}>
         <li className="table-cell py-2">
-            <p className='inline-flex items-center font-bold text-emerald-500'>${payment?.amount}</p>
+            <p className='inline-flex items-center font-bold text-emerald-500'>${formatearNumero(payment?.amount)}</p>
             <p className="text-xs text-gray-500 font-medium dark:text-white">Cantidad</p>
         </li>
         <li className="md:table-cell">

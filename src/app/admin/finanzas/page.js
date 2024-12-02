@@ -5,7 +5,7 @@ import { faPlus } from '@fortawesome/free-solid-svg-icons'
 import { PaymentsContext } from '@component/contexts/PaymentsContext'
 import { ClientsContext } from '@component/contexts/ClientsContext'
 import { AuthContext } from '@component/contexts/AuthContext'
-import { agruparPagosPorCliente, calcularMontoNoRecaudado, calcPagosPendientesHoy, monthCreatedLoans, calclMonthPayments, calcPostPayments, agruparPagosPorMes, contarImpagosPorMes, formatearFecha } from '@component/helpers/'
+import { agruparPagosPorCliente, calcularMontoNoRecaudado, calcPagosPendientesHoy, monthCreatedLoans, calclMonthPayments, calcPostPayments, agruparPagosPorMes, contarImpagosPorMes, formatearFecha, calcPagosPendientesManana, formatearNumero } from '@component/helpers/'
 import GraficaDePagos from '@component/components/GraficaDePagos'
 import ModalCapital from '@component/components/modalCapital'
 import Statistics from '@component/components/statics'
@@ -38,6 +38,7 @@ export default function Finanzas() {
     const [clientes, setClientes] = useState([]);
     const [pendingPayments, setPendingPayments] = useState([]);
     const [todayPayments, setTodayPayments] = useState([]);
+    const [tomorrowPayments, setTomorrowPayments] = useState([]);
     const [pagosPorMes, setPagosPorMes] = useState([]);
     const [impagos, setImpagos] = useState([]);
     
@@ -64,6 +65,10 @@ export default function Finanzas() {
                 const pagosPendientes = calcPagosPendientesHoy(pagosAgrupados);
                 setPendingPayments(pagosPendientes);
 
+                // Obtener pagos pendientes para mañana
+                const pagosManana = calcPagosPendientesManana(pagosAgrupados);
+                setTomorrowPayments(pagosManana); // Aquí se actualiza el estado de los pagos pendientes para mañana
+
                 // Obtener pagos realizados hoy
                 paymentsToday(paymentsPromise);
 
@@ -86,8 +91,8 @@ export default function Finanzas() {
         return pendingPayments.reduce((total, payment) => payment.montoPendiente + total, 0);
     }
 
-    const tomorrowPayments = () => {
-        return loans.reduce((total, loan) => loan.installmentValue + total, 0);
+    const tomorrowPaymentsTotal = () => {
+        return tomorrowPayments.reduce((total, payment) => payment.montoPendiente + total, 0);
     }
 
     const paymentsToday = (payments) => {
@@ -238,30 +243,32 @@ export default function Finanzas() {
                           >
                             <span className='text-slate-500 dark:text-slate-300 text-sm'>Pagos pendientes hoy</span>
                               <p className='text-black dark:text-white font-bold text-lg'>$
-                                  {parseInt(amountPendingPayments())}
+                              {formatearNumero(parseInt(amountPendingPayments()))}
                               </p>  
                         </button>
-                          <button
-                              type='button'
-                              className='p-2 text-start rounded-md hover:bg-slate-100 dark:hover:bg-blue-700 cursor-pointer'
-                              onClick={() => setShowModalTomorrow(true)}
+                        <button
+                            type='button'
+                            className='p-2 text-start rounded-md hover:bg-slate-100 dark:hover:bg-blue-700 cursor-pointer'
+                            onClick={() => setShowModalTomorrow(true)}
                           >
                             <span className='text-slate-500 dark:text-slate-300 text-sm'>Pendientes mañana</span>
-                              <p className='text-black dark:text-white font-bold text-lg'>${parseInt(tomorrowPayments())}</p>  
-                          </button>
+                              <p className='text-black dark:text-white font-bold text-lg'>
+                              ${formatearNumero(parseInt(tomorrowPaymentsTotal()))}
+                              </p>
+                        </button>
                           <button
                             type='button'
                             className='p-2 text-start rounded-md hover:bg-slate-100 dark:hover:bg-blue-700 cursor-pointer'
                             onClick={() => setShowTodayModal(true)}
                           >
                             <span className='text-slate-500 dark:text-slate-300 text-sm'>Recaudo hoy</span>
-                              <p className='text-black dark:text-white font-bold text-lg'>${parseInt(raisedMoneyToday())}</p>  
+                              <p className='text-black dark:text-white font-bold text-lg'>${formatearNumero(parseInt(raisedMoneyToday()))}</p>  
                           </button>
                           <div
                             className='text-start p-2 rounded-md hover:bg-slate-100 dark:hover:bg-blue-700 cursor-pointer'
                           >
                             <span className='text-slate-500 dark:text-slate-300 text-sm'>Saldo Caja</span>
-                            <p className='text-black dark:text-white font-bold text-lg'>${parseInt(calcSaldoCaja())}</p>
+                            <p className='text-black dark:text-white font-bold text-lg'>${formatearNumero(parseInt(calcSaldoCaja()))}</p>
                           </div>
                           <div className='p-2'>
                             <span className='text-slate-500 dark:text-slate-300 text-sm'>Registrados hoy</span>
@@ -275,7 +282,7 @@ export default function Finanzas() {
                         <div className='grid grid-cols-2'>
                             <div className='p-2'>
                                 <span className='text-slate-500 text-sm'>Dinero Recaudado</span>
-                                <p className='text-black dark:text-white font-bold text-lg'>${calclMonthPayments(payments)}</p>  
+                                <p className='text-black dark:text-white font-bold text-lg'>${formatearNumero(calclMonthPayments(payments))}</p>  
                             </div>
                             <div className='p-2'>
                                 <span className='text-slate-500 text-sm'>Prestamos Creados</span>
@@ -283,7 +290,7 @@ export default function Finanzas() {
                             </div>
                             <div className='p-2'>
                                 <span className='text-slate-500 text-sm'>Impagos</span>
-                                <p className='text-black dark:text-white font-bold text-lg'>{parseInt(calcularMontoNoRecaudado(clientes))}</p>  
+                                <p className='text-black dark:text-white font-bold text-lg'>${formatearNumero(parseInt(calcularMontoNoRecaudado(clientes)))}</p>  
                             </div>
                             <div className='p-2'>
                                 <span className='text-slate-500 text-sm'>Pagos registrados en el mes</span>
@@ -328,7 +335,7 @@ export default function Finanzas() {
               <ModalTomorrow
                 showModal={showModalTomorrow}
                 setShowModal={setShowModalTomorrow}
-                prestamos={clientes}
+                prestamos={tomorrowPayments}
               />
           ) : ''}
 

@@ -1,6 +1,6 @@
 import { Fragment, useState, useContext } from 'react'
 import { Dialog, DialogPanel, DialogTitle, Transition, TransitionChild } from '@headlessui/react'
-import { formatearFecha } from '@component/helpers'
+import { formatearFecha, formatearNumero } from '@component/helpers'
 
 const ModalTomorrow = ({ showModal, setShowModal, prestamos }) => {
 
@@ -52,15 +52,15 @@ const ModalTomorrow = ({ showModal, setShowModal, prestamos }) => {
                             className="flex items-center justify-between accordion border-b border-grey-light hover:bg-gray-100 cursor-pointer gap-4 p-2"
                         >
                             <li className="table-cell py-2">
-                                <p className='inline-flex items-center font-bold text-emerald-500'>${loan?.installmentValue}</p>
+                                <p className='inline-flex items-center font-bold text-emerald-500'>${formatearNumero(loan.montoPendiente)}</p>
                                 <p className="text-xs text-gray-500 font-medium">Cuota</p>
                             </li>
                             <li className="md:table-cell">
-                                <p className="text-sm text-gray-800 font-medium">{loan.clientId?.name}</p>
+                                <p className="text-sm text-gray-800 font-medium">{loan.cliente.name}</p>
                                 <p className="text-xs text-gray-500 font-medium">Nombre</p>
                             </li>
                             <li className="hidden md:table-cell">
-                                <p className="text-sm text-gray-800 font-medium">{formatearFecha(loan?.date)}</p>
+                                <p className="text-sm text-gray-800 font-medium">{formatearFecha(loan.fechaEsperada)}</p>
                                 <p className="text-xs text-gray-500 font-medium">Fecha</p>
                             </li>
                         </ul>
