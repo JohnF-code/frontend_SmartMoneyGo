@@ -102,12 +102,11 @@ export function calcularMontoNoRecaudado(prestamos) {
 }
 
 export function calcPagosPendientesHoy(pagosAgrupados) {
-     const hoy = new Date();
+    const hoy = new Date();
     hoy.setHours(0, 0, 0, 0); // Ajustar la hora para comparar solo la fecha
 
     let pagosPendientesHoy = [];
 
-    // console.log('agrupados', pagosAgrupados);
     pagosAgrupados.forEach(prestamo => {
         if (!prestamo.terminated) {
             let fechaPagoEsperada = new Date(prestamo.date);
@@ -115,21 +114,40 @@ export function calcPagosPendientesHoy(pagosAgrupados) {
             let fechaFinal = new Date(prestamo.finishDate);
             fechaFinal.setHours(0, 0, 0, 0); // Ajustar la hora para comparar solo la fecha
 
-            const pagosRealizados = new Set(prestamo.pagos.map(pago => {
+                        // Agregar un día a la fecha final
+                        fechaFinal.setDate(fechaFinal.getDate() + 1); // Esto hace que el rango termine un día después
+
+            const montoCuota = (prestamo.loanAmount + (prestamo.loanAmount * (prestamo.interest / 100))) / prestamo.installments;
+
+            // Acumular pagos realizados por fecha
+            const pagosRealizadosPorFecha = prestamo.pagos.reduce((mapa, pago) => {
                 const fechaPago = new Date(pago.date);
                 fechaPago.setHours(0, 0, 0, 0); // Ajustar la hora para comparar solo la fecha
-                return fechaPago.toDateString();
-            }));
+                const key = fechaPago.toDateString();
+                mapa[key] = (mapa[key] || 0) + pago.amount;
+                return mapa;
+            }, {});
+
+            const fechaCreacion = new Date(prestamo.date);
+            fechaCreacion.setHours(0, 0, 0, 0); // Ajustar la hora para comparar solo la fecha
+
+            // Verificar si el préstamo fue creado hoy
+            if (fechaCreacion.toDateString() === hoy.toDateString()) {
+                return; // Salir y omitir este préstamo
+            }
 
             // Iterar por cada día dentro del rango del préstamo
             while (fechaPagoEsperada <= fechaFinal) {
                 if (fechaPagoEsperada.getDay() !== 0) { // Omitir los domingos
-                    // console.log('fechaEsperada', fechaPagoEsperada.toDateString());
-                    if (fechaPagoEsperada.toDateString() === hoy.toDateString() && !pagosRealizados.has(fechaPagoEsperada.toDateString())) {
+                    const fechaClave = fechaPagoEsperada.toDateString();
+                    const totalPagado = pagosRealizadosPorFecha[fechaClave] || 0;
+
+                    // Solo agregar pagos pendientes para hoy
+                    if (fechaPagoEsperada.toDateString() === hoy.toDateString() && totalPagado < montoCuota) {
                         pagosPendientesHoy.push({
                             cliente: prestamo.clientId,
-                            montoPendiente: (prestamo.loanAmount + (prestamo.loanAmount * (prestamo.interest / 100))) / prestamo.installments,
-                            fechaEsperada: new Date(fechaPagoEsperada) // Clonar fecha para evitar referencias
+                            montoPendiente: montoCuota - totalPagado,
+                            fechaEsperada: new Date(fechaPagoEsperada) // Clonar fecha
                         });
                     }
                 }
@@ -138,7 +156,6 @@ export function calcPagosPendientesHoy(pagosAgrupados) {
         }
     });
 
-    // console.log('pendientes hoy', pagosPendientesHoy);
     return pagosPendientesHoy;
 }
 
@@ -478,7 +495,60 @@ export const calculateLoansPerMonth = (clients) => {
 };
 
 export function formatearNumero(numero) {
-    const numeroFormateado = new Intl.NumberFormat('es-ES').format(numero);
+    const numeroFormateado = new Intl.NumberFormat('es-CO').format(numero);
     return numeroFormateado;
   }
+
+  export function calcPagosPendientesManana(pagosAgrupados) {
+    const hoy = new Date();
+    hoy.setHours(0, 0, 0, 0); // Ajustar la hora para comparar solo la fecha
+
+    const manana = new Date(hoy);
+    manana.setDate(hoy.getDate() + 1); // Avanzar un día para calcular mañana
+
+    let pagosPendientesManana = [];
+
+    pagosAgrupados.forEach(prestamo => {
+        if (!prestamo.terminated) {
+            let fechaPagoEsperada = new Date(prestamo.date);
+            fechaPagoEsperada.setHours(0, 0, 0, 0); // Ajustar la hora para comparar solo la fecha
+            let fechaFinal = new Date(prestamo.finishDate);
+            fechaFinal.setHours(0, 0, 0, 0); // Ajustar la hora para comparar solo la fecha
+
+                        // Agregar un día a la fecha final
+                        fechaFinal.setDate(fechaFinal.getDate() + 1); // Esto hace que el rango termine un día después
+
+            const montoCuota = (prestamo.loanAmount + (prestamo.loanAmount * (prestamo.interest / 100))) / prestamo.installments;
+
+            // Acumular pagos realizados por fecha
+            const pagosRealizadosPorFecha = prestamo.pagos.reduce((mapa, pago) => {
+                const fechaPago = new Date(pago.date);
+                fechaPago.setHours(0, 0, 0, 0); // Ajustar la hora para comparar solo la fecha
+                const key = fechaPago.toDateString();
+                mapa[key] = (mapa[key] || 0) + pago.amount;
+                return mapa;
+            }, {});
+
+            while (fechaPagoEsperada <= fechaFinal) {
+                if (fechaPagoEsperada.getDay() !== 0) { // Omitir los domingos
+                    const fechaClave = fechaPagoEsperada.toDateString();
+                    const totalPagado = pagosRealizadosPorFecha[fechaClave] || 0;
+
+                    // Aquí solo se agregan los pagos pendientes para mañana
+                    if (fechaPagoEsperada.toDateString() === manana.toDateString() && totalPagado < montoCuota) {
+                        pagosPendientesManana.push({
+                            cliente: prestamo.clientId,
+                            montoPendiente: montoCuota - totalPagado,
+                            fechaEsperada: new Date(fechaPagoEsperada) // Clonar fecha para evitar referencias
+                        });
+                    }
+                }
+                fechaPagoEsperada.setDate(fechaPagoEsperada.getDate() + 1);
+            }
+        }
+    });
+
+    return pagosPendientesManana;
+}
+
 

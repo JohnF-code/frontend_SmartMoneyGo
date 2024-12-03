@@ -1,6 +1,6 @@
 import { Fragment, useState, useContext } from 'react'
 import { Dialog, DialogPanel, DialogTitle, Transition, TransitionChild } from '@headlessui/react'
-import { formatearFecha } from '@component/helpers'
+import { formatearFecha, formatearNumero } from '@component/helpers'
 
 const ModalPendingPayments = ({ showModal, setShowModal, prestamos }) => {
 
@@ -52,7 +52,7 @@ const ModalPendingPayments = ({ showModal, setShowModal, prestamos }) => {
                             className="flex items-center justify-between border-b border-grey-light hover:bg-gray-100 cursor-pointer gap-4 p-2" 
                         >
                             <li className="table-cell py-2">
-                                <p className='inline-flex items-center font-bold text-emerald-500'>${loan?.montoPendiente}</p>
+                                <p className='inline-flex items-center font-bold text-emerald-500'>${formatearNumero(loan?.montoPendiente)}</p>
                                 <p className="text-xs text-gray-500 font-medium">Cuota</p>
                             </li>
                             <li className="md:table-cell">

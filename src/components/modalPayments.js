@@ -62,12 +62,12 @@ const ModalPayments = ({ showPayment, setShowPayment}) => {
     await getLoans();
 
   }
-  
+  const saldoPendiente = Number(saldoc()) - Number(amountc);
 
   const handleConfirm = () => {
     Swal.fire({
       title: '¿Confirmar registro de pago?',
-      html: `Se registrará un pago por <span class="text-green-500 font-bold">${formatearNumero(amountc)}</span>. El saldo pendiente es <span class="text-red-500 font-bold">${formatearNumero(saldoc())}</span>`,
+      html: `Se registrará un pago por <span class="text-green-500 font-bold">${formatearNumero(amountc)}</span>. El saldo pendiente es <span class="text-red-500 font-bold">${formatearNumero(saldoPendiente)}</span>`,
       icon: 'warning',
       showCancelButton: true,
       confirmButtonText: 'Sí, registrar',
