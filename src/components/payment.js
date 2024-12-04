@@ -15,7 +15,7 @@ const Payment = ({ payment, index }) => {
   return (
     <li>
         <ul className="flex items-center justify-between px-20 lg:px-44 accordion border-b border-grey-light hover:bg-gray-100 dark:hover:bg-blue-800 cursor-pointer" onClick={() => setPanel(!panel)}>
-        <li className="table-cell py-2">
+        <li className="table-cell py-2 ">
             <p className='inline-flex items-center font-bold text-emerald-500'>${formatearNumero(payment?.amount)}</p>
             <p className="text-xs text-gray-500 font-medium dark:text-white">Cantidad</p>
         </li>
@@ -23,7 +23,7 @@ const Payment = ({ payment, index }) => {
             <p className="text-sm text-gray-800 font-medium dark:text-gray-400">{payment.clientId?.name}</p>
             <p className="text-xs text-gray-500 font-medium dark:text-white">Nombre</p>
         </li>
-        <li className="hidden md:table-cell">
+        <li className="md:table-cell">
             <p className="text-sm text-gray-800 font-medium dark:text-gray-400">{formatearFecha(payment?.date)}</p>
             <p className="text-xs text-gray-500 font-medium dark:text-white">Fecha</p>
         </li>

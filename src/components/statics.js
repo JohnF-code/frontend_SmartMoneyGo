@@ -14,14 +14,16 @@ import { formatearNumero } from '@component/helpers';
 const Statistics = ({ capital, payments }) => {
 
   const { loans, getLoans } = useContext(LoansContext);
-  const { bills } = useContext(BillsContext);
-  const { withdrawals } = useContext(WithdrawalContext);
+  const { getBills, bills } = useContext(BillsContext);
+  const { getWithdrawals, withdrawals } = useContext(WithdrawalContext);
   const { clients } = useContext(ClientsContext);
 
   const [interest, setInterest] = useState(0);
 
   useEffect(() => {
     getLoans(true);
+    getBills();
+    getWithdrawals();
   }, [])
   
   
