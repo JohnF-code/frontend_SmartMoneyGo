@@ -10,6 +10,8 @@ import { faArrowCircleLeft, faArrowLeft, faPen, faTrashCan, faX } from '@fortawe
 import { ToastContainer } from 'react-toastify';
 import ModalLoan from '@component/components/modalLoan';
 import { formatearFecha, formatearNumero } from '@component/helpers';
+import axiosInstance from '../../../config/axios';
+
 
 export default function Page() {
 
@@ -76,6 +78,7 @@ export default function Page() {
 // Función para obtener los detalles del pago por el ID del préstamo
 const getPaymentByLoanId = async (loanId) => {
   const token = window.localStorage.getItem('token');  // Obtener el token de localStorage
+  
   const config = {
     headers: {
       "Content-Type": "application/json",
@@ -84,12 +87,8 @@ const getPaymentByLoanId = async (loanId) => {
   };
 
   try {
-    const response = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}payments?loanId=${loanId}`, config);
-    if (!response.ok) {
-      throw new Error('Failed to fetch payment details');
-    }
-    const data = await response.json();  // Obtener los datos de la respuesta
-    return data;
+    const response = await axiosInstance.get(`/payments?loanId=${loanId}`, config);
+    return response.data;  // Retorna los datos de la respuesta
   } catch (error) {
     console.error('Error fetching payment data:', error);
     return null;
