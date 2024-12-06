@@ -59,9 +59,8 @@ export default function Finanzas() {
               await getLoans(true);
               await getCapital();
   
-              // Filtrar solo los pagos válidos que tengan cliente_id
-              const validPayments = paymentsPromise.filter(pago => pago?.cliente?._id);
-              const pagosAgrupados = await agruparPagosPorCliente(validPayments, loans);
+            // Agrupar los pagos por cliente
+            const pagosAgrupados = await agruparPagosPorCliente(paymentsPromise, loans);
               setClientes(pagosAgrupados);
   
               // Crear un Web Worker
