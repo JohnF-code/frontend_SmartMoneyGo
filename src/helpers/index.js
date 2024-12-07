@@ -58,10 +58,15 @@ export function agruparPagosPorCliente(pagos, prestamos) {
 }
 
 export function formatearFecha(fecha) {
-  const opciones = { year: 'numeric', month: '2-digit', day: '2-digit',   };
-  const date = new Date(fecha).getTime() + 3600000 * 5;
-  return new Date(date).toLocaleDateString('es-CO', opciones);
-}
+    const opciones = {
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+      timeZone: 'America/Bogota' // Zona horaria de Colombia
+    };
+    const date = new Date(fecha);
+    return new Intl.DateTimeFormat('es-CO', opciones).format(date);
+  }
 
 export function calcularMontoNoRecaudado(prestamos) {
     

@@ -53,40 +53,63 @@ export default function Finanzas() {
     const [showModalWidthdraw, setShowModalWidthdraw] = useState(false);
 
     useEffect(() => {
-        const getClients = async () => {
-            try {
-                const paymentsPromise = await getPayments();
-                await getLoans(true);
-                await getCapital();
-                const pagosAgrupados = await agruparPagosPorCliente(paymentsPromise, loans);
-                setClientes(pagosAgrupados);
-
-                // Obtener pagos pendientes hoy
-                const pagosPendientes = calcPagosPendientesHoy(pagosAgrupados);
-                setPendingPayments(pagosPendientes);
-
-                // Obtener pagos pendientes para mañana
-                const pagosManana = calcPagosPendientesManana(pagosAgrupados);
-                setTomorrowPayments(pagosManana); // Aquí se actualiza el estado de los pagos pendientes para mañana
-
-                // Obtener pagos realizados hoy
-                paymentsToday(paymentsPromise);
-
-                // Obtener pagos agrupados por mes
-                const monthPayments = agruparPagosPorMes(payments);
-                setPagosPorMes(monthPayments);
-
-                // Obtener impagos agrupados por mes
-                const impagosPorMes = contarImpagosPorMes(pagosAgrupados);
-                setImpagos(impagosPorMes);
-            } catch (error) {
-                console.log(error);
-            }
-        }
-
-        getClients();
-    }, [])
-
+      const getClients = async () => {
+          try {
+              const paymentsPromise = await getPayments();
+              await getLoans(true);
+              await getCapital();
+  
+              // Filtrar solo los pagos válidos que tengan cliente_id
+              const validPayments = paymentsPromise.filter(pago => pago?.cliente?._id);
+              const pagosAgrupados = await agruparPagosPorCliente(validPayments, loans);
+              setClientes(pagosAgrupados);
+  
+              // Crear un Web Worker
+              const worker = new Worker(new URL('./worker.js', import.meta.url));
+  
+              // Escuchar mensajes del worker
+              worker.onmessage = (event) => {
+                  const { type, data } = event.data;
+  
+                  if (type === 'resultadoHoy') {
+                      setPendingPayments(data); // Actualizar los pagos pendientes para hoy
+                  }
+  
+                  if (type === 'resultadoManana') {
+                      setTomorrowPayments(data); // Actualizar los pagos pendientes para mañana
+                  }
+              };
+  
+              // Obtener pagos realizados hoy
+              paymentsToday(paymentsPromise);
+  
+              // Obtener pagos agrupados por mes
+              const monthPayments = agruparPagosPorMes(payments);
+              setPagosPorMes(monthPayments);
+  
+              // Obtener impagos agrupados por mes
+              const impagosPorMes = contarImpagosPorMes(pagosAgrupados);
+              setImpagos(impagosPorMes);
+  
+              // Enviar ambos mensajes al worker para los cálculos en paralelo
+              await Promise.all([
+                  worker.postMessage({ type: 'calcularHoy', data: { pagosAgrupados } }),
+                  worker.postMessage({ type: 'calcularManana', data: { pagosAgrupados } })
+              ]);
+  
+              // Limpiar el worker al desmontar el componente
+              return () => {
+                  worker.terminate();
+              };
+          } catch (error) {
+              console.log(error);
+          }
+      };
+  
+      getClients();
+  }, []);
+  
+  
     const amountPendingPayments = () => {
         return pendingPayments.reduce((total, payment) => payment.montoPendiente + total, 0);
     }
