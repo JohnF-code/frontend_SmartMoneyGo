@@ -29,7 +29,7 @@ const Header = () => {
           aria-expanded="false"
           onClick={() => setHide(!hide)}
         >
-            <FontAwesomeIcon icon={faBars} className='text-3xl text-black'/>
+            <FontAwesomeIcon icon={faBars} className='text-3xl text-black dark:text-white'/>
         </button>
         <ThemeToggle />
         <nav className={`${hide ? 'hidden' : 'block'} w-full lg:hidden" id="navbar-default`}>

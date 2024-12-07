@@ -10,6 +10,8 @@ import { faArrowCircleLeft, faArrowLeft, faPen, faTrashCan, faX } from '@fortawe
 import { ToastContainer } from 'react-toastify';
 import ModalLoan from '@component/components/modalLoan';
 import { formatearFecha, formatearNumero } from '@component/helpers';
+import axiosInstance from '../../../config/axios';
+
 
 export default function Page() {
 
@@ -73,12 +75,58 @@ export default function Page() {
       setCurrentPage(page);
   };
 
-  const selectLoan = loan => {
-    setMoreInfo(!moreInfo);
-    setPrestamo(loan);
-    console.log(loan);
-    // const { name, document, contact, coordinates, date } = client;
+// Función para obtener los detalles del pago por el ID del préstamo
+const getPaymentByLoanId = async (loanId) => {
+  const token = window.localStorage.getItem('token');  // Obtener el token de localStorage
+  
+  const config = {
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${token}`,  // Agregar el token en el encabezado
+    }
+  };
+
+  try {
+    const response = await axiosInstance.get(`/payments?loanId=${loanId}`, config);
+    return response.data;  // Retorna los datos de la respuesta
+  } catch (error) {
+    console.error('Error fetching payment data:', error);
+    return null;
   }
+};
+
+const selectLoan = async (loan) => {
+  // Alternar la visibilidad de más información
+  setMoreInfo(!moreInfo);
+
+  // Establecer inmediatamente el préstamo seleccionado (sin latestPayment)
+  setPrestamo({ ...loan, latestPayment: null });
+
+  try {
+    // Obtener los detalles del pago para el loanId
+    const paymentDetails = await getPaymentByLoanId(loan._id);
+
+    let latestPayment = null;
+
+    // Verificar si se obtuvieron los detalles del pago
+    if (paymentDetails && paymentDetails.length > 0) {
+      // Encontrar el pago con la fecha más reciente
+      latestPayment = paymentDetails.reduce((latest, current) => {
+        const latestDate = new Date(latest.date);
+        const currentDate = new Date(current.date);
+        return currentDate > latestDate ? current : latest;
+      });
+    } else {
+      console.log('No se han registrado pagos para este préstamo.');
+    }
+
+    // Actualizar el estado del préstamo con el último pago
+    setPrestamo({ ...loan, latestPayment });
+  } catch (error) {
+    console.error('Error al obtener los detalles del pago:', error);
+  }
+};
+
   
   const editLoan = loan => {
     console.log('PRESTAMO', loan.clientId._id);
@@ -165,7 +213,14 @@ export default function Page() {
                                   <p className='mb-2'>Interés: <span className='font-bold text-lg'>{interest}%</span></p>
                                    <p className='mb-2'>Fecha: <span className='font-bold text-lg'>{formatearFecha(date)}</span></p>
                                    <p className='mb-2'>Ficha Finalización: <span className='font-bold text-lg'>{formatearFecha(finishDate)}</span></p>
-                                   
+                                   {prestamo.latestPayment ? (
+                                  <div>
+                                  <p className='mb-2'>Fecha de último Pago: <span className='font-bold text-lg'>{formatearFecha(prestamo.latestPayment.date)}</span></p>
+                                  <p className='mb-2'>Monto de último Pago: <span className='font-bold text-lg'>{formatearNumero(prestamo.latestPayment.amount)}</span></p>
+                                  </div>
+                                  ) : (
+                                  <p className='mb-2 text-white font-bold'>No se ha abonado ningún pago para este préstamo.</p>
+                                   )}
                                   <button
                                     type='button'
                                     className='text-white bg-gradient-to-r from-green-500 via-green-600 to-green-700 hover:bg-gradient-to-br focus:ring-4 focus:outline-none focus:ring-green-300 dark:focus:ring-green-800 shadow-lg shadow-green-500/50 dark:shadow-lg dark:shadow-green-800/80 font-medium rounded-lg text-sm px-5 py-2.5 text-center me-2 mb-2'

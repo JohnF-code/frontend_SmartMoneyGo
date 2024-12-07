@@ -37,31 +37,36 @@ export function calcularDiasAtraso(fechaFinalizacion, fechaPago) {
 }
 
 export function agruparPagosPorCliente(pagos, prestamos) {
-    return new Promise((resolve, reject) => {
+    return new Promise((resolve) => {
         const loans = [];
         try {
+            // Filtrar solo los pagos que tienen un loanId y un _id válidos
+            const pagosValidos = pagos.filter(pago => pago?.loanId?._id);
+
             prestamos.forEach(prestamo => {
-                const currentPayments = pagos.filter(pago => pago.loanId._id === prestamo._id);
+                const currentPayments = pagosValidos.filter(pago => pago.loanId._id === prestamo._id);
 
                 loans.push({
                     ...prestamo,
                     pagos: currentPayments
-                })
-            })
-            const result = loans;
+                });
+            });
 
-            resolve(result);
+            resolve(loans);
         } catch (error) {
-            reject(error);
+            console.error('Error en agruparPagosPorCliente:', error);
+            resolve([]); // Continuar la ejecución con un array vacío
         }
     });
 }
 
+
 export function formatearFecha(fecha) {
-  const opciones = { year: 'numeric', month: '2-digit', day: '2-digit',   };
-  const date = new Date(fecha).getTime() + 3600000 * 5;
-  return new Date(date).toLocaleDateString('es-CO', opciones);
-}
+    const opciones = { year: 'numeric', month: '2-digit', day: '2-digit',   };
+    const date = new Date(fecha).getTime() ; 
+    return new Date(date).toLocaleDateString('es-CO', opciones);
+  }
+
 
 export function calcularMontoNoRecaudado(prestamos) {
     
