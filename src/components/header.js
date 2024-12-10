@@ -46,6 +46,9 @@ const Header = () => {
               <Link href="/admin/prestamos" className={`block py-2 px-3 ${currentLocation === '/admin/prestamos' ? 'bg-blue-700 text-white' : 'text-gray-900'} rounded md:bg-transparent dark:text-white`}>Prestamos</Link>
             </li>
             <li>
+              <Link href="/admin/historial" className={`block py-2 px-3 ${currentLocation === '/admin/historial' ? 'bg-blue-700 text-white' : 'text-gray-900'} rounded dark:text-white`} onClick={() => setHide(true)}>Historial De Clientes</Link>
+            </li>
+            <li>
               <Link href="pagos" className={`block py-2 px-3 ${currentLocation === '/admin/pagos' ? 'bg-blue-700 text-white' : 'text-gray-900'} rounded dark:text-white`} onClick={() => setHide(true)}>Pagos</Link>
             </li>
             {user.role === 'finanzas' || user.role === 'administrador' ?
