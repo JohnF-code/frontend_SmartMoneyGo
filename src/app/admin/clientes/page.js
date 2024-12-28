@@ -1,299 +1,227 @@
-"use client";
-import { useContext, useState, useEffect, Fragment } from 'react'
-import ModalClient from '@component/components/modalClient';
-import ModalLoan from '@component/components/modalLoan';
-import ModalInfo from '@component/components/ModalInfo';
-import { ClientsContext } from '@component/contexts/ClientsContext';
-import { AuthContext } from '@component/contexts/AuthContext';
-import ModalPayments from '@component/components/modalPayments';
-import Searcher from '@component/components/searcher';
-import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
-import { faTrashCan, faEye, faPen, faPlus } from '@fortawesome/free-solid-svg-icons'
-import { ToastContainer } from 'react-toastify';
-import axios from '@component/config/axios';
-import { formatearFecha } from '@component/helpers';
+import { Fragment, useState, useContext } from 'react'
+import { Dialog, DialogPanel, DialogTitle, Transition, TransitionChild } from '@headlessui/react'
+import { ClientsContext } from '../contexts/ClientsContext'
+import { toast } from 'react-toastify';
+import { calculateEndDate } from '../helpers';
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import { faLocationDot } from '@fortawesome/free-solid-svg-icons';
+import LocationMap from './locationMap';
 
+const ModalClient = ({ showModal, setShowModal, client, cleanClient }) => {
 
-export default function Page() {
-
-  const clientsContext = useContext(ClientsContext);
-  const { clients, deleteClient, getClients } = clientsContext;
-
-  const authContext = useContext(AuthContext)
-  const { user } = authContext;
-  
-  const [showModal, setShowModal] = useState(false);
-  const [showLoan, setShowLoan] = useState(false);
-  const [showPayment, setShowPayment] = useState(false);
-  const [selectedClient, setSelectedClient] = useState({});
-  const [currentClients, setCurrentClients] = useState([]);
-  const [loan, setLoan] = useState({});
-  const [client, setClient] = useState({});
-  const [showInfo, setShowInfo] = useState(false);
-  const [moreInfo, setMoreInfo] = useState(false);
-  const [currentPage, setCurrentPage] = useState(1);
-  
-  useEffect(() => {
-    getClients();
-  }, []);
-
-    let itemsPerPage = 50;
-
-    const totalPages = Math.ceil(clients.length / itemsPerPage);
+    // Context State
+    const clientsContext = useContext(ClientsContext);
     
-    useEffect(() => {
-      setCurrentClients(paginateClients(clients, currentPage, itemsPerPage));
-    }, [currentPage, clients]);
+    const { clients, addClient, updateClient } = clientsContext;
 
-    // Divide el arreglo de pagos en páginas
-    const paginateClients = (clients, currentPage, itemsPerPage) => {
-      const startIndex = (currentPage - 1) + (itemsPerPage * (currentPage - 1));
-      const endIndex = startIndex + itemsPerPage;
-      return clients.slice(startIndex, endIndex);
-    };
+    // State
+    const [data, setData] = useState({
+        name: client?.name || '',
+        contact: client?.contact || '',
+        document: client?.document || '',
+        location: client?.coordinates || ''
+    });
 
-    const handlePreviousPage = () => {
-      setCurrentPage(prevPage => (prevPage > 1 ? prevPage - 1 : prevPage));
-    };
+    const [alert, showAlert] = useState(false);
+    const [message, setMessage] = useState('');
 
-    const handleNextPage = () => {
-      setCurrentPage(prevPage => (prevPage < totalPages ? prevPage + 1 : prevPage));
-    };
+    const [openLocation, setOpenLocation] = useState(false);
+    const [location, setLocation] = useState({
+        lat: client.coordinates ? client.coordinates[0] : 0,
+        lng: client.coordinates ? client.coordinates[1] : 0
+    });  // Inicializa con coordenadas de ejemplo
 
-    const handlePageChange = (page) => {
-      setCurrentPage(page);
-  };
-
-  const showModalInfo = async (client) => {
-    // setShowInfo(true);
-    const token = window.localStorage.getItem('token');
-    const config = {
-      headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`
-      }
+    const handleChange = e =>  {
+        setData({ ...data, [e.target.name] : e.target.value })
     }
-    const loans = await axios(`/loans/${client._id}`, config);
-    setLoan(loans.data);
-    setClient(client);
-    setShowInfo(true);
-  }
 
-  const handleEdit = client => {
-    setClient(client);
-    setShowModal(true);
-  }
+    const handleSubmit = async e => {
+        e.preventDefault();
 
-  const cleanClient = () => {
-    setClient({});
-  }
+        // Validation
+        const { name, document, contact } = data;
+        if (name.trim() === '' || contact.trim() === '' || document.trim() === '') {
+            setMessage('Todos los campos son obligatorios')
+            showAlert(true);
+            setTimeout(() => {
+                showAlert(false);
+            }, 3000);
+            return;
+        }
 
-  const selectClient = client => {
-    setMoreInfo(!moreInfo);
-    setClient(client);
-    console.log(client);
-    // const { name, document, contact, coordinates, date } = client;
-  }
-  
+        if (client.name) {
+            console.log(client);
+            console.log('LOC', location);
+            // Estamos editando...
+            data.coordinates = [location.lat, location.lng];
+            const res = await updateClient({
+                ...data,
+                id: client._id
+            })
+            
+            // Clean CLient
+            cleanClient();
+
+            // Clean Fields
+            setData({
+                name: '',
+                contact: '',
+                document: '',
+                loanAmount: '',
+                interest: '',
+                installments: ''
+            });
+            
+            // Close Modal
+            setShowModal(false);
+            toast.success(res.msg);
+            return;
+        }
+
+        // Verificar si ya hay un cliente con este número de cedula
+        const isClient = clients.find(data => data.document === document);
+        console.log(isClient);
+
+        // Si existe, entonces verficar si ya ha sido terminado
+        // Solo se puede abrir un nuevo prestamo, una vez el anterior haya culminado
+        if (isClient) {
+            // No se pueden tener dos prestamos en curso
+            setMessage('Ya hay otro cliente con este número de cedula')
+            showAlert(true);
+            setTimeout(() => {
+                showAlert(false);
+            }, 3000);
+            return;
+        }
+        // Request Context
+        await addClient({
+            ...data,
+            date: Date.now(),
+        });
+
+        // Clean Fields
+        setData({
+            name: '',
+            contact: '',
+            document: '',
+            loanAmount: '',
+            interest: '',
+            installments: ''
+        });
+        
+        // Close Modal
+        setShowModal(false);
+        
+    }
+
+    const handleClose = () => {
+        cleanClient();
+        setShowModal(false);
+    }
+
+    const showLocationModal = () => {
+        setLocation({
+            lat: client.coordinates[0],
+            lng: client.coordinates[1]
+        })
+        setOpenLocation(true);
+    }
+
+     const handleSaveLocation = (newLocation) => {
+        console.log('Nueva ubicación guardada:', newLocation);
+        // Aquí deberías hacer una llamada a la base de datos o API para guardar los datos
+        setLocation(newLocation);
+    };
+
   return (
     <>
-      <h2 className='text-black dark:text-white text-3xl font-extrabold mb-10 text-center lg:text-start'>Lista de Clientes</h2>
-
-      <div className='mx-auto mb-5'>
-        <div className='w-[95%] lg:w-auto mx-auto flex flex-col lg:p-5'>
-          <Searcher
-            setCurrentClients={setCurrentClients}
-          />
-          <button
-            type='button'
-            className='text-white bg-gradient-to-r from-green-400 via-green-500 to-green-600 hover:bg-gradient-to-br focus:ring-4 focus:outline-none focus:ring-green-300 dark:focus:ring-green-800 shadow-lg shadow-green-500/50 dark:shadow-lg dark:shadow-green-800/80 font- rounded-lg text-lg px-5 py-2.5 text-center me-2 mb-2 self-start sm:col-span-2 lg:col-span-1'
-            onClick={() => {
-              setClient({});
-              setShowModal(true)
-            }}>
-            Agregar
-          </button>
-          
-          <div className="my-2 overflow-x-auto rounded-lg max-w-[95vw] lg:max-w-[70vw] xl:max-w-[80vw] lg:mx-4">
-            <div className="inline-block min-w-full py-2 align-middle md:px-6 lg:px-8">
-              <div className="overflow-hidden border border-gray-300 dark:border-gray-500 md:rounded-lg">
-                <table className='table min-w-full text-start font-light text-surface dark:text-white w-full'>
-                  <thead className='border-b border-neutral-200 bg-[#332D2D] font-medium text-white dark:border-white/10'>
-                    <tr>
-                      <th scope="col" className='px-6 py-4 text-xl font-extrabold'>#</th>
-                      {/* <th scope="col" className='px-6 py-4 text-xl font-extrabold'>Acciones</th> */}
-                      <th scope="col" className='px-6 py-4 text-xl font-extrabold'>Nombre</th>
-                      <th scope="col" className='px-6 py-4 text-xl font-extrabold hidden md:block'>Cedula</th>
-                      {/* <th scope="col" className='px-6 py-4 text-xl font-extrabold'>contacto</th>
-                      <th scope="col" className='px-6 py-4 text-xl font-extrabold'>Cedula</th>
-                      <th scope="col" className='px-6 py-4 text-xl font-extrabold'>Prestamo</th>
-                      <th scope="col" className='px-6 py-4 text-xl font-extrabold'>Interés</th>
-                      <th scope="col" className='px-6 py-4 text-xl font-extrabold'>Cuotas</th>
-                      <th scope="col" className='px-6 py-4 text-xl font-extrabold'>Saldo</th> */}
-                      {/* <th scope="col" className='px-6 py-4 text-xl font-extrabold'>Saldo</th>
-                      <th scope="col" className='px-6 py-4 text-xl font-extrabold'>Valor de cuota</th> */}
-                        
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {clients.length ? 
-                       currentClients.map((cliente, index) => {
-                        const { name, document } = cliente;
-                        return (
-                          <Fragment
-                            key={index}
-                          >
-                            <tr
-                              className="border-b border-neutral-200 dark:border-white/10 hover:bg-white dark:hover:bg-gray-800 cursor-pointer"
-                              onClick={() => selectClient(cliente)}
-                              key={index}
-                            >
-                              <td className="text-black dark:text-white whitespace-nowrap text-lg  px-6 py-4 font-extrabold">{index}</td>
-
-                              <td className="text-black dark:text-white whitespace-nowrap text-lg px-6 py-4">{name}</td>
-                              <td className="text-black dark:text-white whitespace-nowrap text-lg  px-6 py-4 hidden md:block">{document}</td>
-                            </tr>
-                            {moreInfo && client._id === cliente._id ? (
-                              <tr
-                                className="text-black dark:text-white bg-white dark:bg-slate-700 justify-start text-start w-full"
-                              >
-                                <td colSpan="3" className="whitespace-nowrap text-lg p-4">
-                                   <p className='mb-2'>Nombre: <span className='font-bold text-lg'>{client.name}</span></p>
-                                    <p className='mb-2'>CC: <span className='font-bold text-lg'>{client.document}</span></p>
-                                    <p className='mb-2'>Contacto: <span className='font-bold text-lg'>{client.contact}</span></p>
-                                    <p className='mb-2'>Fecha: <span className='font-bold text-lg'>{formatearFecha(client.date)}</span></p>
-                                  {/* <button
-                                    type='button'
-                                    className='text-white bg-gradient-to-r from-blue-500 via-blue-600 to-blue-700 hover:bg-gradient-to-br focus:ring-4 focus:outline-none focus:ring-blue-300 dark:focus:ring-blue-800 shadow-lg shadow-blue-500/50 dark:shadow-lg dark:shadow-blue-800/80 font-medium rounded-lg text-sm px-5 py-2.5 text-center me-2 mb-2'
-                                    onClick={() => handlePayment(client)}
-                                  >
-                                    Registrar Pago
-                                  </button> */}
-                                  <button
-                                    type='button'
-                                    className='text-white bg-gradient-to-r from-purple-500 via-purple-600 to-purple-700 hover:bg-gradient-to-br focus:ring-4 focus:outline-none focus:ring-purple-300 dark:focus:ring-purple-800 shadow-lg shadow-purple-500/50 dark:shadow-lg dark:shadow-purple-800/80 font-medium rounded-xl text-sm px-5 py-3 text-center me-2 mb-2 items-center flex-col justify-center'
-                                    onClick={() => {
-                                      setShowLoan(true)
-                                      setSelectedClient(client._id)
-                                    }}
-                                  >
-                                    <FontAwesomeIcon icon={faPlus} className='text-lg mr-2'/>
-                                    PRESTAMO
-                                  </button>
-                                  <button
-                                    type="button"
-                                    className="text-white bg-gradient-to-r from-blue-400 via-blue-500 to-blue-600 hover:bg-gradient-to-br focus:ring-4 focus:outline-none focus:ring-blue-300 dark:focus:ring-blue-800 shadow-lg shadow-blue-500/50 dark:shadow-lg dark:shadow-blue-800/80 font-medium rounded-xl text-base px-5 py-2.5 text-center me-2 mb-2"
-                                    onClick={() => showModalInfo(client)}
-                                  >
-                                    <FontAwesomeIcon
-                                        icon={faEye}
-                                    />
-                                  </button>
-                                  {user.role === 'administrador' ?
-                                    <button
-                                    type="button"
-                                    className="text-white bg-gradient-to-r from-yellow-300 via-yellow-400 to-yellow-500 hover:bg-gradient-to-br focus:ring-4 font-medium rounded-xl text-base px-5 py-2.5 text-center me-2 mb-2"
-                                    onClick={() => handleEdit(client)}
-                                  >
-                                    <FontAwesomeIcon
-                                        icon={faPen}
-                                    />
-                                  </button>
-                                  : ''}
-                                  {user.role === 'administrador' ?
-                                    <button
-                                      type='button'
-                                      className='text-white bg-gradient-to-r from-red-400 via-red-500 to-red-600 hover:bg-gradient-to-br focus:ring-4 focus:outline-none focus:ring-red-300 dark:focus:ring-red-800 shadow-lg shadow-red-500/50 dark:shadow-lg dark:shadow-red-800/80 font-medium rounded-xl text-base px-4 py-2.5 text-center me-2 mb-2 '
-                                      onClick={() => deleteClient(client._id)}
-                                    >
-                                      <FontAwesomeIcon icon={faTrashCan} />
-                                    </button>
-                                  : null}
-                                </td>
-                              </tr>
-                            ) : ''}
-                          </Fragment>
-                         )
-                       }
-                    ) : null}
-                  </tbody>
-                </table>
+    <Transition appear show={showModal} as={Fragment}>
+        <Dialog
+          open={showModal}
+          transition
+          className='fixed inset-0 flex items-center justify-center w-screen p-4 z-200'
+          onClose={() => setShowModal(false)}
+        >
+          <TransitionChild
+            as={Fragment}
+            enter="ease-out duration-300"
+            enterFrom="opacity-0"
+            enterTo="opacity-100"
+            leave="ease-in duration-200"
+            leaveFrom="opacity-100"
+            leaveTo="opacity-0"
+          >
+            <div className="fixed inset-0 bg-black bg-opacity-70" />
+          </TransitionChild>
+            {/* Modal content */}
+            <DialogPanel className="relative z-10 bg-white rounded-lg shadow dark:bg-gray-700">
+              {/* Modal header */}
+              <div className="flex items-center justify-between p-4 border-b rounded-t md:p-5 dark:border-gray-600">
+                  <DialogTitle className="text-lg font-semibold text-gray-900 dark:text-white">
+                    {client?.name ? 'Editar Cliente' : 'Crear Nuevo Cliente'}
+                  </DialogTitle>
+                  <button type="button" className="inline-flex items-center justify-center w-8 h-8 text-sm text-gray-400 bg-transparent rounded-lg hover:bg-gray-200 hover:text-gray-900 ms-auto dark:hover:bg-gray-600 dark:hover:text-white" onClick={handleClose}>
+                      <svg className="w-3 h-3" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 14 14">
+                          <path stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="m1 1 6 6m0 0 6 6M7 7l6-6M7 7l-6 6"/>
+                      </svg>
+                      <span className="sr-only">Close modal</span>
+                  </button>
               </div>
-            </div>
-          </div>
 
-          <div className="flex justify-center space-x-2 mt-4">
-                <button
-                    onClick={handlePreviousPage}
-                    disabled={currentPage === 1}
-                    className="px-3 py-1 bg-gray-300 rounded hover:bg-gray-400 disabled:opacity-50"
-                >
-                    Previous
-                </button>
-                {[...Array(totalPages)].map((_, index) => (
-                    <button
-                        key={index}
-                        onClick={() => handlePageChange(index + 1)}
-                        className={`px-3 py-1 rounded ${
-                            currentPage === index + 1
-                                ? 'bg-blue-500 text-white'
-                                : 'bg-gray-300 hover:bg-gray-400'
-                        }`}
-                    >
-                        {index + 1}
-                    </button>
-                ))}
-                <button
-                    onClick={handleNextPage}
-                    disabled={currentPage === totalPages}
-                    className="px-3 py-1 bg-gray-300 rounded hover:bg-gray-400 disabled:opacity-50"
-                >
-                    Next
-                </button>
-            </div>
-        </div>
-
-        
-      </div>
-      
-      {/* Modal */}
-      {showModal && (
-        <ModalClient
-          showModal={showModal}
-          setShowModal={setShowModal}
-          client={client}
-          cleanClient={cleanClient}
+              {/* Modal Body */}
+              <form className="p-4 md:p-5" onSubmit={handleSubmit}>
+                { alert ? (
+                    <div className='p-2 mb-2 text-center bg-red-200'>
+                              <p className='font-black text-red-600'>{message}</p>
+                    </div>
+                ) : '' }
+                  <div className="grid grid-cols-2 gap-4 mb-4">
+                    <div className="col-span-2">
+                        <label htmlFor="name" className="block mb-2 text-sm font-medium text-gray-900 dark:text-white">Name</label>
+                        <input type="text" name="name" id="name" className="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-primary-600 focus:border-primary-600 block w-full p-2.5 dark:bg-gray-600 dark:border-gray-500 dark:placeholder-gray-400 dark:text-white dark:focus:ring-primary-500 dark:focus:border-primary-500" placeholder="Ingresar nombre completo" required="" value={data?.name} onChange={handleChange} />
+                    </div>
+                    <div className="col-span-2 sm:col-span-1">
+                        <label htmlFor="contact" className="block mb-2 text-sm font-medium text-gray-900 dark:text-white">Telefono</label>
+                        <input type="text" name="contact" id="contact" className="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-primary-600 focus:border-primary-600 block w-full p-2.5 dark:bg-gray-600 dark:border-gray-500 dark:placeholder-gray-400 dark:text-white dark:focus:ring-primary-500 dark:focus:border-primary-500" placeholder="Número de teléfono" required="" value={data?.contact} onChange={handleChange} />
+                    </div>
+                    <div className="col-span-2 sm:col-span-1">
+                        <label htmlFor="document" className="block mb-2 text-sm font-medium text-gray-900 dark:text-white">Cédula</label>
+                        <input type="number" name="document" id="document" className="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-primary-600 focus:border-primary-600 block w-full p-2.5 dark:bg-gray-600 dark:border-gray-500 dark:placeholder-gray-400 dark:text-white dark:focus:ring-primary-500 dark:focus:border-primary-500" placeholder="Número de cedula" required="" value={data?.document} onChange={handleChange} />
+                    </div>
+                  </div>
+                    {client.name ? (
+                        <div className="col-span-2">
+                            <button
+                                type='button'
+                                className='block w-full px-4 py-3 mb-5 text-sm font-bold text-blue-600 uppercase transition-all bg-white border-2 border-blue-600 rounded-full hover:bg-blue-600 hover:text-white'
+                                onClick={showLocationModal}
+                            >
+                                Editar Ubicación {' '}
+                                <FontAwesomeIcon icon={faLocationDot} />
+                            </button>
+                        </div>
+                    ) : ''}
+                  <button
+                    type="submit"
+                    className="text-white inline-flex items-center bg-blue-700 hover:bg-blue-800 focus:ring-4 focus:outline-none focus:ring-blue-300 font-medium rounded-lg text-sm px-5 py-2.5 text-center dark:bg-blue-600 dark:hover:bg-blue-700 dark:focus:ring-blue-800"
+                  >
+                      <svg className="w-5 h-5 me-1 -ms-1" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg"><path fillRule="evenodd" d="M10 5a1 1 0 011 1v3h3a1 1 0 110 2h-3v3a1 1 0 11-2 0v-3H6a1 1 0 110-2h3V6a1 1 0 011-1z" clipRule="evenodd"></path></svg>
+                      {client?.name ? 'Guardar Cambios' : 'Añadir Cliente' }
+                  </button>
+              </form>
+            </DialogPanel>
+        </Dialog>
+    </Transition>
+    {openLocation ? (
+        <LocationMap
+            openLocation={openLocation}
+            setOpenLocation={setOpenLocation}
+            initialLocation={location}
+            onSave={handleSaveLocation}
         />
-      )}
-
-      {showPayment ? (
-        <ModalPayments
-          showPayment={showPayment}
-          setShowPayment={setShowPayment}
-        />
-      ) : ''}
-      
-      {showLoan ? (
-        <ModalLoan
-          showLoan={showLoan}
-          setShowLoan={setShowLoan}
-          selectedClient={selectedClient}
-          setSelectedClient={setSelectedClient}
-          setPrestamo={() => {}}
-        />
-      ) : ''}
-
-      {showInfo ? (
-        <ModalInfo
-          loan={loan}
-          client={client}
-          showInfo={showInfo}
-          setShowInfo={setShowInfo}
-          selectedClient={selectedClient}
-        />
-      ) : ''}
-
-      <ToastContainer />
+    ) : ''}
     </>
   )
 }
+
+export default ModalClient
