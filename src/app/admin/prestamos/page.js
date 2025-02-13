@@ -212,7 +212,7 @@ const selectLoan = async (loan) => {
                                    </p>
                                   <p className='mb-2'>Interés: <span className='font-bold text-lg'>{interest}%</span></p>
                                    <p className='mb-2'>Fecha: <span className='font-bold text-lg'>{formatearFecha(date)}</span></p>
-                                   <p className='mb-2'>Ficha Finalización: <span className='font-bold text-lg'>{formatearFecha(finishDate)}</span></p>
+                                   <p className='mb-2'>Fecha Finalización: <span className='font-bold text-lg'>{formatearFecha(finishDate)}</span></p>
                                    {prestamo.latestPayment ? (
                                   <div>
                                   <p className='mb-2'>Fecha de último Pago: <span className='font-bold text-lg'>{formatearFecha(prestamo.latestPayment.date)}</span></p>
