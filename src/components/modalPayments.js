@@ -1,25 +1,35 @@
-import { Fragment, useState, useContext } from 'react'
-import { Dialog, DialogPanel, DialogTitle, Transition, TransitionChild } from '@headlessui/react'
+import { Fragment, useState, useContext, useEffect, useRef, useCallback } from 'react';
+import { Dialog, DialogPanel, DialogTitle, Transition, TransitionChild } from '@headlessui/react';
 import { ClientsContext } from '../contexts/ClientsContext';
 import { LoansContext } from '@component/contexts/LoansContext';
 import { AuthContext } from '@component/contexts/AuthContext';
-import { toast } from 'react-toastify';
-import Swal from 'sweetalert2';
 import { formatearNumero } from '@component/helpers';
 
-const ModalPayments = ({ showPayment, setShowPayment}) => {
+// Función throttle para limitar la frecuencia de ejecución de una función
+const throttle = (func, delay) => {
+  let lastCall = 0;
+  return (...args) => {
+    const now = Date.now();
+    if (now - lastCall < delay) {
+      return;
+    }
+    lastCall = now;
+    return func(...args);
+  }
+};
 
-  const clientsContext = useContext(ClientsContext);
-  const { addPayment, currentClient } = clientsContext;
+// Función para generar una clave idempotente única
+const generateIdempotencyKey = () => {
+  return `${Date.now()}-${Math.random().toString(36).substring(2, 15)}`;
+}
 
-  const loansContext = useContext(LoansContext);
-  const { getLoans } = loansContext;
+const ModalPayments = ({ showPayment, setShowPayment }) => {
 
-  const authContext = useContext(AuthContext)
-  const { user } = authContext;
+  const { addPayment, currentClient } = useContext(ClientsContext);
+  const { getLoans } = useContext(LoansContext);
+  const { user } = useContext(AuthContext);
 
-
-  // State
+  // Estado inicial del pago
   const [payment, setPayment] = useState({
     clientId: currentClient._id,
     loanId: currentClient.loanId,
@@ -28,147 +38,227 @@ const ModalPayments = ({ showPayment, setShowPayment}) => {
     date: Date.now()
   });
 
+  // Estado para la clave idempotente
+  const [idempotencyKey, setIdempotencyKey] = useState(generateIdempotencyKey());
+
+  // Estado para controlar el procesamiento y evitar envíos duplicados
+  const [isProcessing, setIsProcessing] = useState(false);
+
+  // Estado para mostrar la sección de confirmación integrada en el modal
+  const [showConfirmation, setShowConfirmation] = useState(false);
+
+  // Al abrir el modal se reinician la clave idempotente y la sección de confirmación
+  useEffect(() => {
+    if (showPayment) {
+      setIdempotencyKey(generateIdempotencyKey());
+      setShowConfirmation(false);
+    }
+  }, [showPayment]);
+
   const { document, amount, date } = payment;
 
+  // Calcula el monto total a pagar
   const amountc = Array.isArray(amount)
-  ? amount.reduce((total, current) => total + current.amount, 0) 
-  : amount; 
+    ? amount.reduce((total, current) => total + current.amount, 0)
+    : amount; 
 
+  // Función para calcular el saldo actual
   const saldoc = () => {
     return Array.isArray(currentClient.balance)
       ? currentClient.balance.reduce((total, current) => total + current.balance, 0)
       : currentClient.balance; 
   };
 
-  // Change Inputs
+  // Manejo de cambios en los inputs
   const handleChange = e => {
-    setPayment({ ...payment, [e.target.name]: e.target.value })
-  }
+    setPayment({ ...payment, [e.target.name]: e.target.value });
+  };
 
-  const handleSubmit = async () => {
-    setShowPayment(false); // Cerrar el modal principal
-    const request = await addPayment({
+  // Función para registrar el pago, con seguridad (idempotencia, flag, etc.)
+  const handleSubmit = useCallback(async () => {
+    setIsProcessing(true);
+    const paymentData = {
       ...payment,
+      idempotencyKey,
       balance: currentClient.balance,
       clientId: currentClient._id,
-    });
+    };
+    try {
+      setShowPayment(false); // Cierra el modal principal
+      await addPayment(paymentData);
+      setPayment({
+        document: '',
+        amount: '',
+        date: '',
+      });
+      await getLoans();
+    } catch (error) {
+      console.error("Error al registrar el pago:", error);
+    } finally {
+      setIsProcessing(false);
+    }
+  }, [payment, idempotencyKey, currentClient, addPayment, getLoans, setShowPayment]);
 
-    setPayment({
-      document: '',
-      amount: '',
-      Date: '',
-    });
-
-    await getLoans();
-
-  }
+  // Calcula el saldo pendiente (saldo actual menos monto de cuota)
   const saldoPendiente = Number(saldoc()) - Number(amountc);
 
-  const handleConfirm = () => {
-    Swal.fire({
-      title: '¿Confirmar registro de pago?',
-      html: `Se registrará un pago por <span class="text-green-500 font-bold">${formatearNumero(amountc)}</span>. El saldo pendiente es <span class="text-red-500 font-bold">${formatearNumero(saldoPendiente)}</span>`,
-      icon: 'warning',
-      showCancelButton: true,
-      confirmButtonText: 'Sí, registrar',
-      scrollbarPadding: false,
-      cancelButtonText: 'Cancelar',
-      allowOutsideClick: false, // Bloquea interacciones fuera del modal
-      preConfirm: async () => {
-        Swal.showLoading(); // Bloquea el botón con un loader
-        Swal.getCancelButton().style.display = 'none'; // Desactiva el botón de cancelar
-        try {
-          await handleSubmit(); // Ejecuta la lógica del registro
-          Swal.fire({
-            title: 'Pago Registrado',
-            text: 'El pago fue registrado con éxito.',
-            icon: 'success',
-            confirmButtonText: 'Aceptar',
-          })
-        } catch (error) {
-          Swal.fire({
-            title: 'Error',
-            text: 'Hubo un problema al registrar el pago.',
-            icon: 'error',
-            confirmButtonText: 'Aceptar',
-          });
-        }
-      },
-    });
+  // Almacenamos la función throttled para la acción de confirmar, para evitar múltiples envíos en 10 segundos (10000 ms)
+  const throttledConfirmActionRef = useRef(throttle(async () => {
+    await handleSubmit();
+    setShowConfirmation(false);
+  }, 10000));
+
+  // Handler para mostrar la sección de confirmación integrada
+  const handleShowConfirmation = () => {
+    if (!isProcessing) {
+      setShowConfirmation(true);
+    }
+  };
+
+  // Handler para cancelar la confirmación y volver al formulario
+  const handleCancelConfirmation = () => {
+    setShowConfirmation(false);
   };
 
   return (
-    <>
-      <Transition appear show={showPayment} as={Fragment}>
-        <Dialog
-          open={showPayment}
-          transition
-          className='fixed inset-0 flex w-screen items-center justify-center p-4 z-200'
-          onClose={() => setShowPayment(false)}
+    <Transition appear show={showPayment} as={Fragment}>
+      <Dialog
+        open={showPayment}
+        transition
+        className="fixed inset-0 flex w-screen items-center justify-center p-4 z-200"
+        onClose={() => setShowPayment(false)}
+      >
+        <TransitionChild
+          as={Fragment}
+          enter="ease-out duration-300"
+          enterFrom="opacity-0"
+          enterTo="opacity-100"
+          leave="ease-in duration-200"
+          leaveFrom="opacity-100"
+          leaveTo="opacity-0"
         >
-          <TransitionChild
-            as={Fragment}
-            enter="ease-out duration-300"
-            enterFrom="opacity-0"
-            enterTo="opacity-100"
-            leave="ease-in duration-200"
-            leaveFrom="opacity-100"
-            leaveTo="opacity-0"
-          >
-            <div className="fixed inset-0 bg-black bg-opacity-70" />
-          </TransitionChild>
+          <div className="fixed inset-0 bg-black bg-opacity-70" />
+        </TransitionChild>
 
-          {/* Modal content */}
+        <DialogPanel className="relative z-10 bg-white rounded-lg shadow dark:bg-gray-700">
+          {/* Encabezado del Modal */}
+          <div className="flex items-center justify-between p-4 md:p-5 border-b rounded-t dark:border-gray-600">
+            <DialogTitle className="text-lg font-semibold text-gray-900 dark:text-white">
+              Registrar Pago
+            </DialogTitle>
+            <button
+              type="button"
+              className="text-gray-400 bg-transparent hover:bg-gray-200 hover:text-gray-900 rounded-lg text-sm w-8 h-8 ms-auto inline-flex justify-center items-center dark:hover:bg-gray-600 dark:hover:text-white"
+              onClick={() => setShowPayment(false)}
+            >
+              <svg className="w-3 h-3" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 14 14">
+                <path stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="m1 1 6 6m0 0 6 6M7 7l6-6M7 7l-6 6" />
+              </svg>
+              <span className="sr-only">Close modal</span>
+            </button>
+          </div>
 
-          <DialogPanel className="relative z-10 bg-white rounded-lg shadow dark:bg-gray-700">
-            {/* Modal header */}
-            <div className="flex items-center justify-between p-4 md:p-5 border-b rounded-t dark:border-gray-600">
-              <DialogTitle className="text-lg font-semibold text-gray-900 dark:text-white">
-                Registrar Pago
-              </DialogTitle>
-              <button type="button" className="text-gray-400 bg-transparent hover:bg-gray-200 hover:text-gray-900 rounded-lg text-sm w-8 h-8 ms-auto inline-flex justify-center items-center dark:hover:bg-gray-600 dark:hover:text-white" onClick={() => setShowPayment(false)}>
-                <svg className="w-3 h-3" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 14 14">
-                  <path stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="m1 1 6 6m0 0 6 6M7 7l6-6M7 7l-6 6" />
-                </svg>
-                <span className="sr-only">Close modal</span>
-              </button>
+          {/* Cuerpo del Modal */}
+          <form className="p-4 md:p-5" onSubmit={(e) => { e.preventDefault(); }}>
+            <div className="grid gap-4 mb-4 grid-cols-2">
+              <div className="col-span-2">
+                <label htmlFor="document" className="block mb-2 text-sm font-medium text-gray-900 dark:text-white">Cédula</label>
+                <input
+                  type="text"
+                  name="document"
+                  id="document"
+                  className="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-primary-600 focus:border-primary-600 block w-full p-2.5 dark:bg-gray-600 dark:border-gray-500 dark:placeholder-gray-400 dark:text-white dark:focus:ring-primary-500 dark:focus:border-primary-500"
+                  placeholder="Número de cédula"
+                  required
+                  value={document}
+                  disabled
+                  onChange={handleChange}
+                />
+              </div>
+
+              <div className="col-span-2">
+                <label htmlFor="amount" className="block mb-2 text-sm font-medium text-gray-900 dark:text-white">Cantidad</label>
+                <input
+                  type="text"
+                  name="amount"
+                  id="amount"
+                  className="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-primary-600 focus:border-primary-600 block w-full p-2.5 dark:bg-gray-600 dark:border-gray-500 dark:placeholder-gray-400 dark:text-white dark:focus:ring-primary-500 dark:focus:border-primary-500"
+                  placeholder="Cantidad a pagar"
+                  required
+                  value={amount}
+                  onChange={handleChange}
+                />
+              </div>
+
+              {user.role === 'administrador' && (
+                <div className="col-span-2">
+                  <label htmlFor="date" className="block mb-2 text-sm font-medium text-gray-900 dark:text-white">Fecha</label>
+                  <input
+                    type="date"
+                    name="date"
+                    id="date"
+                    className="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-primary-600 focus:border-primary-600 block w-full p-2.5 dark:bg-gray-600 dark:border-gray-500 dark:placeholder-gray-400 dark:text-white dark:focus:ring-primary-500 dark:focus:border-primary-500"
+                    placeholder="Fecha de pago"
+                    value={date}
+                    onChange={handleChange}
+                  />
+                </div>
+              )}
             </div>
 
-            {/* Modal Body */}
-            <form className="p-4 md:p-5" onSubmit={handleSubmit}>
-              <div className="grid gap-4 mb-4 grid-cols-2">
-                <div className="col-span-2">
-                  <label htmlFor="document" className="block mb-2 text-sm font-medium text-gray-900 dark:text-white">Cedula</label>
-                  <input type="text" name="document" id="document" className="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-primary-600 focus:border-primary-600 block w-full p-2.5 dark:bg-gray-600 dark:border-gray-500 dark:placeholder-gray-400 dark:text-white dark:focus:ring-primary-500 dark:focus:border-primary-500" placeholder="número de cedula" required="" value={document} disabled onChange={handleChange} />
+            {/* Información dinámica del saldo, en letra grande (26px) */}
+            <div className="mb-4 text-center">
+              <p style={{ fontSize: '26px', fontWeight: 'bold' }}>
+                Saldo Pendiente: {formatearNumero(saldoPendiente)}
+              </p>
+            </div>
+
+            {/* Sección de confirmación integrada en el modal */}
+            {showConfirmation ? (
+              <div className="border p-4 rounded mb-4 text-center">
+                <p style={{ fontSize: '26px', fontWeight: 'bold' }}>
+                  Saldo Pendiente: {formatearNumero(saldoPendiente)}
+                </p>
+                <p className="mb-4">Se registrará un pago por: {formatearNumero(amountc)}</p>
+                <div className="flex justify-center gap-4">
+                  <button
+                    type="button"
+                    disabled={isProcessing}
+                    onClick={() => throttledConfirmActionRef.current()}
+                    className="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700"
+                  >
+                    Confirmar
+                  </button>
+                  <button
+                    type="button"
+                    disabled={isProcessing}
+                    onClick={handleCancelConfirmation}
+                    className="bg-red-600 text-white px-4 py-2 rounded hover:bg-red-700"
+                  >
+                    Cancelar
+                  </button>
                 </div>
+              </div>
+            ) : null}
 
-                <div className="col-span-2">
-                  <label htmlFor="amount" className="block mb-2 text-sm font-medium text-gray-900 dark:text-white">Cantidad</label>
-                  <input type="text" name="amount" id="amount" className="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-primary-600 focus:border-primary-600 block w-full p-2.5 dark:bg-gray-600 dark:border-gray-500 dark:placeholder-gray-400 dark:text-white dark:focus:ring-primary-500 dark:focus:border-primary-500" placeholder="Número de teléfono" required="" value={amount} onChange={handleChange} />
-                </div>
-
-                {user.role === 'administrador' ? (
-                  <div className="col-span-2">
-                    <label htmlFor="date" className="block mb-2 text-sm font-medium text-gray-900 dark:text-white">Fecha</label>
-                    <input type="date" name="date" id="date" className="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-primary-600 focus:border-primary-600 block w-full p-2.5 dark:bg-gray-600 dark:border-gray-500 dark:placeholder-gray-400 dark:text-white dark:focus:ring-primary-500 dark:focus:border-primary-500" placeholder="Fecha De Pago" value={date} onChange={handleChange} />
-                  </div>
-                ) : ''}
-
+            {/* Botón para mostrar la sección de confirmación */}
+            {!showConfirmation && (
+              <div className="flex justify-center">
                 <button
                   type="button"
-                  className="text-white inline-flex items-center bg-blue-700 hover:bg-blue-800 focus:ring-4 focus:outline-none focus:ring-blue-300 font-medium rounded-lg text-sm px-5 py-2.5 text-center dark:bg-blue-600 dark:hover:bg-blue-700 dark:focus:ring-blue-800"
-                  onClick={handleConfirm}
+                  disabled={isProcessing}
+                  onClick={handleShowConfirmation}
+                  className={`text-white inline-flex items-center bg-blue-700 hover:bg-blue-800 focus:ring-4 focus:outline-none focus:ring-blue-300 font-medium rounded-lg text-sm px-5 py-2.5 text-center dark:bg-blue-600 dark:hover:bg-blue-700 dark:focus:ring-blue-800 ${isProcessing ? 'opacity-50 cursor-not-allowed' : ''}`}
                 >
-                  <svg className="me-1 -ms-1 w-5 h-5" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg"><path fillRule="evenodd" d="M10 5a1 1 0 011 1v3h3a1 1 0 110 2h-3v3a1 1 0 11-2 0v-3H6a1 1 0 110-2h3V6a1 1 0 011-1z" clipRule="evenodd"></path></svg>
                   Registrar Pago
                 </button>
               </div>
-            </form>
-          </DialogPanel>
-        </Dialog>
-      </Transition>
-    </>
-  )
-}
+            )}
+          </form>
+        </DialogPanel>
+      </Dialog>
+    </Transition>
+  );
+};
 
-export default ModalPayments
+export default ModalPayments;

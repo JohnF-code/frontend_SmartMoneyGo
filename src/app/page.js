@@ -1,17 +1,17 @@
+// JohnF-code Jajajaja
+// /src/pages/page.js
+
 "use client";
 import { useAuth } from "@component/hooks/useAuth";
-import { redirect } from 'next/navigation'
+import { redirect } from "next/navigation";
+import "react-toastify/dist/ReactToastify.css";
 
 export default function Page() {
   const { user, loading } = useAuth();
 
-  if (loading) return 'cargando...'
-  
-  document.querySelector('body').classList.add('bg-gray');
+  if (loading) return "cargando...";
 
-  return (
-    <>
-      {user?._id ? redirect('/admin/dashboard') : redirect('/login')}
-    </>
-  );
+  document.querySelector("body").classList.add("bg-gray");
+
+  return <>{user?._id ? redirect("/admin/dashboard") : redirect("/login")}</>;
 }

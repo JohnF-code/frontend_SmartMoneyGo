@@ -1,66 +1,82 @@
 "use client";
-// src/contexts/ClientsContext.js
-import React, { createContext, useEffect, useState } from 'react';
-import axios from '@component/config/axios';
-import axiosInstance from 'axios';
-import Swal from 'sweetalert2';
-import moment from 'moment';
-import { io } from 'socket.io-client';
 
-const ClientsContext = createContext();
+import React, { createContext, useState, useEffect } from "react";
+import axios from "@component/config/axios";
+import Swal from "sweetalert2";
+import { io } from "socket.io-client";
 
-const ClientsProvider = ({ children }) => {
+export const ClientsContext = createContext();
+
+export const ClientsProvider = ({ children }) => {
   const [clients, setClients] = useState([]);
+  const [loading, setLoading] = useState(false);
   const [currentClient, setCurrentClient] = useState({});
-  const [loading, setLoading] = useState(true);
 
+  // Socket
   useEffect(() => {
-    // Conexión al WebSocket
-    const socketUrl = process.env.NEXT_PUBLIC_STOCK_IO_URL || 'http://localhost:5000';
-    const socket = io(socketUrl); // Conexión al servidor WebSocket
+    const socketUrl = process.env.NEXT_PUBLIC_STOCK_IO_URL || "http://localhost:5000";
+    const socket = io(socketUrl);
 
-    // Escuchar el evento 'clientUpdated' (nuevo cliente agregado o cliente eliminado)
-    socket.on('clientUpdated', (data) => {
-      console.log(data.message); // Depuración
-
-      if (data.client) {
-        // Si es un cliente eliminado, eliminarlo de la lista
-        if (data.message === 'Cliente eliminado') {
-          setClients(prevClients => prevClients.filter(client => client._id !== data.client._id));
-        } else {
-          // Si es un cliente agregado, añadirlo a la lista
-          setClients(prevClients => [...prevClients, data.client]);
-        }
-      }
+    socket.on("connect", () => {
+      console.log("[ClientsContext] socket conectado ->", socket.id);
     });
 
-    // Desconectar al desmontar el componente
+    // Cuando se emita clientUpdated, refrescamos
+    socket.on("clientUpdated", (data) => {
+      console.log("[ClientsContext] clientUpdated =>", data);
+      getClients();
+    });
+
     return () => {
       socket.disconnect();
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
-  
-  useEffect(() => {
-    getClients();
-  }, [])
 
   const getClients = async () => {
-    const config = {
-        headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${window.localStorage.getItem('token')}`
-        }
-    }
-
     try {
-      const request = await axios('/clients', config);
-      const data = request.data.sort((a, b) => moment(b.date).unix() - new moment(a.date).unix());
+      setLoading(true);
+      const token = window.localStorage.getItem("token");
+      if (!token) {
+        setClients([]);
+        return;
+      }
+      const config = {
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+      };
+      const { data } = await axios.get("/clients", config);
       setClients(data);
-    } catch (error) {
-      console.log(error);
+    } catch (err) {
+      console.error("[getClients] error =>", err);
+    } finally {
+      setLoading(false);
     }
-  }
+  };
 
+  const addPayment = async (paymentData, onClose = ()=>{}) => {
+    try {
+      const token = window.localStorage.getItem("token");
+      if (!token) return;
+      const config = {
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+      };
+
+      onClose(true);
+      await axios.post("/payments", paymentData, config);
+      Swal.fire("OK", "Pago registrado con éxito", "success");
+    } catch (err) {
+      console.error("[addPayment] error =>", err);
+      Swal.fire("Error", "No se pudo registrar el pago", "error");
+    }
+  };
+
+  // Otras funciones: addClient, deleteClient, etc. si las necesitas
   const addClient = async client => {
     try {
       const token = window.localStorage.getItem('token');
@@ -127,103 +143,6 @@ const ClientsProvider = ({ children }) => {
       });
     }
   };
-  
-  const showLocationModal = (client) => {
-    Swal.fire({
-      title: "Especifica tu ubicación",
-      html: `
-        <h1>No encontramos tu ubicacion, le solicitamos que la seleccione manualmente.</h1>
-        <div id="map" style="width: 100%; height: 400px;"></div>
-        <input type="hidden" id="selectedLat" />
-        <input type="hidden" id="selectedLng" />
-      `,
-      showCancelButton: true,
-      confirmButtonText: 'Guardar ubicación',
-      preConfirm: () => {
-        const lat = document.getElementById('selectedLat').value; // Mantén el valor como cadena
-        const lng = document.getElementById('selectedLng').value; // Mantén el valor como cadena
-        
-        
-        if (!lat || !lng) {
-          Swal.showValidationMessage('Debes seleccionar una ubicación.');
-        } else {
-          client.coordinates = [lat, lng];
-          return client;
-        }
-      }
-    }).then(async (result) => {
-      if (result.isConfirmed && result.value) {
-        Swal.fire({
-          title: "Procesando...",
-          text: "Creando cliente. Por favor, espera.",
-          allowOutsideClick: false,
-          didOpen: () => {
-            Swal.showLoading();
-          },
-        });
-  
-        const config = {
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${window.localStorage.getItem('token')}`,
-          }
-        }
-  
-        // Agregar cliente con la ubicación manualmente especificada
-        await axios.post('/clients', result.value, config);
-        await getClients();
-  
-        // Mostrar notificación de éxito
-        Swal.fire({
-          title: "¡Éxito!",
-          text: "Cliente creado correctamente con ubicación seleccionada manualmente.",
-          icon: "success",
-          timer: 3000,
-          showConfirmButton: false,
-        });
-  }
-    });
-  
-    // Inicializar Google Maps
-    const map = new google.maps.Map(document.getElementById("map"), {
-      center: { lat: 7.889100, lng: -72.496700 }, // Coordenadas iniciales (Colombia, Cucuta) 
-      zoom: 12,
-    });
-  
-    const marker = new google.maps.Marker({
-      position: map.getCenter(),
-      map: map,
-      draggable: true,
-    });
-  
-    // Actualizar lat y lng en el formulario
-    google.maps.event.addListener(marker, 'dragend', () => {
-      const position = marker.getPosition();
-      document.getElementById('selectedLat').value = position.lat();
-      document.getElementById('selectedLng').value = position.lng();
-    });
-  };
-  
-
-
-  const updateClient = async client => {
-    try {
-      const config = {
-        headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${window.localStorage.getItem('token')}`
-        }
-      }
-
-      const res = await axios.put(`/clients/${client.id}`, client, config);
-      
-      await getClients();
-      return res.data;
-
-    } catch (error) {
-      console.log(error);
-    }
-  }
 
   const deleteClient = async id => {
     const token = window.localStorage.getItem('token');
@@ -258,38 +177,21 @@ const ClientsProvider = ({ children }) => {
       console.log(error);
     })
   }
-  
-  const addPayment = async (client) => {
-    const token = window.localStorage.getItem('token');
-    // Get Current client
-    const config = {
-      headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`
-      }
-    }
-    const request = await axios.post('/payments', client, config);
-    await getClients();
-    
-    console.log(request);
-    return request.data;
-  }
 
   return (
-    <ClientsContext.Provider value={{
-      clients,
-      setClients,
-      addClient,
-      getClients,
-      addPayment,
-      deleteClient,
-      updateClient,
-      currentClient,
-      setCurrentClient
-    }}>
+    <ClientsContext.Provider
+      value={{
+        clients,
+        loading,
+        getClients,
+        addPayment,
+        addClient,
+        deleteClient,
+        currentClient,
+        setCurrentClient
+      }}
+    >
       {children}
     </ClientsContext.Provider>
   );
 };
-
-export { ClientsProvider, ClientsContext };

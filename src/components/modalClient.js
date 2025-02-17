@@ -1,148 +1,99 @@
-import { Fragment, useState, useContext } from 'react'
-import { Dialog, DialogPanel, DialogTitle, Transition, TransitionChild } from '@headlessui/react'
+import { Fragment, useState, useContext, useEffect } from 'react'
+import { Dialog, Transition } from '@headlessui/react'
 import { ClientsContext } from '../contexts/ClientsContext'
-import { toast } from 'react-toastify';
-import { calculateEndDate } from '../helpers';
-import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faLocationDot } from '@fortawesome/free-solid-svg-icons';
-import LocationMap from './locationMap';
+import { toast } from 'react-toastify'
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
+import { faLocationDot } from '@fortawesome/free-solid-svg-icons'
+import LocationMap from './locationMap'
 
-const ModalClient = ({ showModal, setShowModal, client, cleanClient }) => {
+export default function ModalClient({ showModal, setShowModal, client, cleanClient, onClose }) {
+  const { clients, addClient, updateClient } = useContext(ClientsContext)
 
-    // Context State
-    const clientsContext = useContext(ClientsContext);
-    
-    const { clients, addClient, updateClient } = clientsContext;
+  const [data, setData] = useState({
+    name: client?.name || '',
+    contact: client?.contact || '',
+    document: client?.document || '',
+    location: client?.coordinates || ''
+  })
 
-    // State
-    const [data, setData] = useState({
-        name: client?.name || '',
-        contact: client?.contact || '',
-        document: client?.document || '',
-        location: client?.coordinates || ''
-    });
+  const [alert, showAlert] = useState(false)
+  const [message, setMessage] = useState('')
+  const [openLocation, setOpenLocation] = useState(false)
+  const [location, setLocation] = useState({
+    lat: client.coordinates ? client.coordinates[0] : 0,
+    lng: client.coordinates ? client.coordinates[1] : 0
+  })
 
-    const [alert, showAlert] = useState(false);
-    const [message, setMessage] = useState('');
+  function handleChange(e) {
+    setData({ ...data, [e.target.name]: e.target.value })
+  }
 
-    const [openLocation, setOpenLocation] = useState(false);
-    const [location, setLocation] = useState({
-        lat: client.coordinates ? client.coordinates[0] : 0,
-        lng: client.coordinates ? client.coordinates[1] : 0
-    });  // Inicializa con coordenadas de ejemplo
-
-    const handleChange = e =>  {
-        setData({ ...data, [e.target.name] : e.target.value })
+  async function handleSubmit(e) {
+    e.preventDefault()
+    const { name, document, contact } = data
+    if (!name.trim() || !document.trim() || !contact.trim()) {
+      setMessage('Todos los campos son obligatorios')
+      showAlert(true)
+      setTimeout(() => showAlert(false), 3000)
+      return
     }
 
-    const handleSubmit = async e => {
-        e.preventDefault();
+    if (client.name) {
+      // Editar
+      data.coordinates = [location.lat, location.lng]
+      const res = await updateClient({ ...data, id: client._id })
 
-        // Validation
-        const { name, document, contact } = data;
-        if (name.trim() === '' || contact.trim() === '' || document.trim() === '') {
-            setMessage('Todos los campos son obligatorios')
-            showAlert(true);
-            setTimeout(() => {
-                showAlert(false);
-            }, 3000);
-            return;
-        }
-
-        if (client.name) {
-            console.log(client);
-            console.log('LOC', location);
-            // Estamos editando...
-            data.coordinates = [location.lat, location.lng];
-            const res = await updateClient({
-                ...data,
-                id: client._id
-            })
-            
-            // Clean CLient
-            cleanClient();
-
-            // Clean Fields
-            setData({
-                name: '',
-                contact: '',
-                document: '',
-                loanAmount: '',
-                interest: '',
-                installments: ''
-            });
-            
-            // Close Modal
-            setShowModal(false);
-            toast.success(res.msg);
-            return;
-        }
-
-        // Verificar si ya hay un cliente con este número de cedula
-        const isClient = clients.find(data => data.document === document);
-        console.log(isClient);
-
-        // Si existe, entonces verficar si ya ha sido terminado
-        // Solo se puede abrir un nuevo prestamo, una vez el anterior haya culminado
-        if (isClient) {
-            // No se pueden tener dos prestamos en curso
-            setMessage('Ya hay otro cliente con este número de cedula')
-            showAlert(true);
-            setTimeout(() => {
-                showAlert(false);
-            }, 3000);
-            return;
-        }
-        // Request Context
-        await addClient({
-            ...data,
-            date: Date.now(),
-        });
-
-        // Clean Fields
-        setData({
-            name: '',
-            contact: '',
-            document: '',
-            loanAmount: '',
-            interest: '',
-            installments: ''
-        });
-        
-        // Close Modal
-        setShowModal(false);
-        
+      cleanClient()
+      setData({ name: '', contact: '', document: '' })
+      setShowModal(false)
+      toast.success(res.msg)
+      return
     }
 
-    const handleClose = () => {
-        cleanClient();
-        setShowModal(false);
+    // Nuevo
+    const isClient = clients.find((c) => c.document === document)
+    if (isClient) {
+      setMessage('Ya hay otro cliente con este número de cedula')
+      showAlert(true)
+      setTimeout(() => showAlert(false), 3000)
+      return
     }
+    await addClient({ ...data, date: new Date() }, onClose()) // Usa la fecha actual, si deseas
 
-    const showLocationModal = () => {
-        setLocation({
-            lat: client.coordinates[0],
-            lng: client.coordinates[1]
-        })
-        setOpenLocation(true);
-    }
 
-     const handleSaveLocation = (newLocation) => {
-        console.log('Nueva ubicación guardada:', newLocation);
-        // Aquí deberías hacer una llamada a la base de datos o API para guardar los datos
-        setLocation(newLocation);
-    };
+    setData({ name: '', contact: '', document: '' })
+    setShowModal(false)
+  }
+
+  function handleClose() {
+    cleanClient()
+    setShowModal(false)
+  }
+
+  // Mostrar location map
+  function showLocationModal() {
+    setLocation({
+      lat: client.coordinates?.[0] || 0,
+      lng: client.coordinates?.[1] || 0
+    })
+    setOpenLocation(true)
+  }
+
+  function handleSaveLocation(newLocation) {
+    setLocation(newLocation)
+  }
 
   return (
     <>
-    <Transition appear show={showModal} as={Fragment}>
+      <Transition appear show={showModal} as={Fragment}>
         <Dialog
+          as="div"
+          className="fixed inset-0 z-[9999] flex items-center justify-center p-4"
           open={showModal}
-          transition
-          className='fixed inset-0 flex w-screen items-center justify-center p-4 z-200'
-          onClose={() => setShowModal(false)}
+          onClose={handleClose}
         >
-          <TransitionChild
+          {/* Overlay */}
+          <Transition.Child
             as={Fragment}
             enter="ease-out duration-300"
             enterFrom="opacity-0"
@@ -152,76 +103,183 @@ const ModalClient = ({ showModal, setShowModal, client, cleanClient }) => {
             leaveTo="opacity-0"
           >
             <div className="fixed inset-0 bg-black bg-opacity-70" />
-          </TransitionChild>
-            {/* Modal content */}
-            <DialogPanel className="relative z-10 bg-white rounded-lg shadow dark:bg-gray-700">
-              {/* Modal header */}
-              <div className="flex items-center justify-between p-4 md:p-5 border-b rounded-t dark:border-gray-600">
-                  <DialogTitle className="text-lg font-semibold text-gray-900 dark:text-white">
-                    {client?.name ? 'Editar Cliente' : 'Crear Nuevo Cliente'}
-                  </DialogTitle>
-                  <button type="button" className="text-gray-400 bg-transparent hover:bg-gray-200 hover:text-gray-900 rounded-lg text-sm w-8 h-8 ms-auto inline-flex justify-center items-center dark:hover:bg-gray-600 dark:hover:text-white" onClick={handleClose}>
-                      <svg className="w-3 h-3" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 14 14">
-                          <path stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="m1 1 6 6m0 0 6 6M7 7l6-6M7 7l-6 6"/>
-                      </svg>
-                      <span className="sr-only">Close modal</span>
-                  </button>
-              </div>
+          </Transition.Child>
 
-              {/* Modal Body */}
-              <form className="p-4 md:p-5" onSubmit={handleSubmit}>
-                { alert ? (
-                    <div className='p-2 bg-red-200 text-center mb-2'>
-                              <p className='text-red-600 font-black'>{message}</p>
+          <div className="relative w-full max-w-lg">
+            <Transition.Child
+              as={Fragment}
+              enter="ease-out duration-300"
+              enterFrom="opacity-0 scale-90"
+              enterTo="opacity-100 scale-100"
+              leave="ease-in duration-200"
+              leaveFrom="opacity-100 scale-100"
+              leaveTo="opacity-0 scale-90"
+            >
+              <Dialog.Panel
+                className="
+                  relative
+                  z-[9999]
+                  bg-white
+                  rounded-lg
+                  shadow
+                  dark:bg-gray-700
+                "
+              >
+                {/* Header */}
+                <div className="flex items-center justify-between p-4 border-b dark:border-gray-600">
+                  <Dialog.Title as="h2" className="text-lg font-semibold text-gray-900 dark:text-white">
+                    {client?.name ? 'Editar Cliente' : 'Crear Nuevo Cliente'}
+                  </Dialog.Title>
+                  <button
+                    type="button"
+                    className="
+                      w-8 h-8
+                      text-gray-400
+                      bg-transparent
+                      rounded-lg
+                      hover:bg-gray-200
+                      hover:text-gray-900
+                      dark:hover:bg-gray-600
+                      dark:hover:text-white
+                      flex
+                      items-center
+                      justify-center
+                    "
+                    onClick={handleClose}
+                  >
+                    <span className="sr-only">Cerrar</span>
+                    &times;
+                  </button>
+                </div>
+
+                {/* Body / Form */}
+                <form className="p-4 md:p-5" onSubmit={handleSubmit}>
+                  {alert && (
+                    <div className="p-2 mb-2 text-center bg-red-200">
+                      <p className="font-black text-red-600">{message}</p>
                     </div>
-                ) : '' }
-                  <div className="grid gap-4 mb-4 grid-cols-2">
+                  )}
+                  <div className="grid grid-cols-2 gap-4 mb-4">
                     <div className="col-span-2">
-                        <label htmlFor="name" className="block mb-2 text-sm font-medium text-gray-900 dark:text-white">Name</label>
-                        <input type="text" name="name" id="name" className="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-primary-600 focus:border-primary-600 block w-full p-2.5 dark:bg-gray-600 dark:border-gray-500 dark:placeholder-gray-400 dark:text-white dark:focus:ring-primary-500 dark:focus:border-primary-500" placeholder="Ingresar nombre completo" required="" value={data?.name} onChange={handleChange} />
+                      <label
+                        htmlFor="name"
+                        className="block mb-2 text-sm font-medium text-gray-900 dark:text-white"
+                      >
+                        Nombre
+                      </label>
+                      <input
+                        type="text"
+                        name="name"
+                        id="name"
+                        className="
+                          bg-gray-50 border border-gray-300 text-gray-900
+                          text-sm rounded-lg block w-full p-2.5
+                          dark:bg-gray-600 dark:border-gray-500 dark:text-white
+                        "
+                        placeholder="Ingresar nombre completo"
+                        required
+                        value={data.name}
+                        onChange={handleChange}
+                      />
                     </div>
                     <div className="col-span-2 sm:col-span-1">
-                        <label htmlFor="contact" className="block mb-2 text-sm font-medium text-gray-900 dark:text-white">Telefono</label>
-                        <input type="text" name="contact" id="contact" className="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-primary-600 focus:border-primary-600 block w-full p-2.5 dark:bg-gray-600 dark:border-gray-500 dark:placeholder-gray-400 dark:text-white dark:focus:ring-primary-500 dark:focus:border-primary-500" placeholder="Número de teléfono" required="" value={data?.contact} onChange={handleChange} />
+                      <label
+                        htmlFor="contact"
+                        className="block mb-2 text-sm font-medium text-gray-900 dark:text-white"
+                      >
+                        Teléfono
+                      </label>
+                      <input
+                        type="text"
+                        name="contact"
+                        id="contact"
+                        className="
+                          bg-gray-50 border border-gray-300 text-gray-900
+                          text-sm rounded-lg block w-full p-2.5
+                          dark:bg-gray-600 dark:border-gray-500 dark:text-white
+                        "
+                        placeholder="Número de teléfono"
+                        required
+                        value={data.contact}
+                        onChange={handleChange}
+                      />
                     </div>
                     <div className="col-span-2 sm:col-span-1">
-                        <label htmlFor="document" className="block mb-2 text-sm font-medium text-gray-900 dark:text-white">Cédula</label>
-                        <input type="number" name="document" id="document" className="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-primary-600 focus:border-primary-600 block w-full p-2.5 dark:bg-gray-600 dark:border-gray-500 dark:placeholder-gray-400 dark:text-white dark:focus:ring-primary-500 dark:focus:border-primary-500" placeholder="Número de cedula" required="" value={data?.document} onChange={handleChange} />
+                      <label
+                        htmlFor="document"
+                        className="block mb-2 text-sm font-medium text-gray-900 dark:text-white"
+                      >
+                        Cédula
+                      </label>
+                      <input
+                        type="number"
+                        name="document"
+                        id="document"
+                        className="
+                          bg-gray-50 border border-gray-300 text-gray-900
+                          text-sm rounded-lg block w-full p-2.5
+                          dark:bg-gray-600 dark:border-gray-500 dark:text-white
+                        "
+                        placeholder="Número de cédula"
+                        required
+                        value={data.document}
+                        onChange={handleChange}
+                      />
                     </div>
                   </div>
-                    {client.name ? (
-                        <div className="col-span-2">
-                            <button
-                                type='button'
-                                className='block px-4 py-3 text-blue-600 bg-white font-bold uppercase text-sm mb-5 w-full border-blue-600 border-2 rounded-full transition-all hover:bg-blue-600 hover:text-white'
-                                onClick={showLocationModal}
-                            >
-                                Editar Ubicación {' '}
-                                <FontAwesomeIcon icon={faLocationDot} />
-                            </button>
-                        </div>
-                    ) : ''}
+
+                  {client.name && (
+                    <div className="col-span-2 mb-4">
+                      <button
+                        type="button"
+                        className="
+                          block w-full px-4 py-3 mb-5 text-sm font-bold
+                          text-[#2BD6B1] uppercase transition-all bg-white
+                          border-2 border-[#2BD6B1] rounded-full
+                          hover:bg-[#2BD6B1] hover:text-white
+                        "
+                        onClick={showLocationModal}
+                      >
+                        Editar Ubicación <FontAwesomeIcon icon={faLocationDot} />
+                      </button>
+                    </div>
+                  )}
+
+                  {/* Botón "Guardar Cambios" => Texto blanco, hover => negro */}
                   <button
                     type="submit"
-                    className="text-white inline-flex items-center bg-blue-700 hover:bg-blue-800 focus:ring-4 focus:outline-none focus:ring-blue-300 font-medium rounded-lg text-sm px-5 py-2.5 text-center dark:bg-blue-600 dark:hover:bg-blue-700 dark:focus:ring-blue-800"
+                    className="
+                      inline-flex
+                      items-center
+                      bg-[#2BD6B1]
+                      text-white
+                      hover:bg-[#ACF2E3]
+                      hover:text-black
+                      transition
+                      rounded-lg
+                      text-sm
+                      px-5
+                      py-2.5
+                    "
                   >
-                      <svg className="me-1 -ms-1 w-5 h-5" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg"><path fillRule="evenodd" d="M10 5a1 1 0 011 1v3h3a1 1 0 110 2h-3v3a1 1 0 11-2 0v-3H6a1 1 0 110-2h3V6a1 1 0 011-1z" clipRule="evenodd"></path></svg>
-                      {client?.name ? 'Guardar Cambios' : 'Añadir Cliente' }
+                    {client?.name ? 'Guardar Cambios' : 'Añadir Cliente'}
                   </button>
-              </form>
-            </DialogPanel>
+                </form>
+              </Dialog.Panel>
+            </Transition.Child>
+          </div>
         </Dialog>
-    </Transition>
-    {openLocation ? (
+      </Transition>
+
+      {/* Ubicación (LocationMap) se adapta al ancho */}
+      {openLocation && (
         <LocationMap
-            openLocation={openLocation}
-            setOpenLocation={setOpenLocation}
-            initialLocation={location}
-            onSave={handleSaveLocation}
+          openLocation={openLocation}
+          setOpenLocation={setOpenLocation}
+          initialLocation={location}
+          onSave={handleSaveLocation}
         />
-    ) : ''}
+      )}
     </>
   )
 }
-
-export default ModalClient

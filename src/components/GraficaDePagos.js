@@ -27,8 +27,7 @@ const GraficaDePagos = ({ pagosPorMes, impagos }) => {
     const data = {
         type: 'line',
         labels: pagosPorMes.map(pago => `${pago.year}-${String(pago.month).padStart(2, '0')}`),
-        datasets: [
-            {
+        datasets: [{
                 label: 'Monto de Pagos',
                 data: pagosPorMes.map(pago => pago.total),
                 backgroundColor: isDarkMode ? 'rgba(75, 192, 192, 0.2)' : 'rgba(75, 192, 192, 0.2)', // Color de fondo
@@ -79,11 +78,14 @@ const GraficaDePagos = ({ pagosPorMes, impagos }) => {
         },
     };
 
-    return (
-        <div className="bg-white p-4 shadow-sm rounded-lg flex-1 my-6 dark:bg-slate-900">
-            <h2 className="text-lg font-semibold mb-4 text-black dark:text-white">Gráfica de Pagos y Impagos</h2>
-            <Line data={data} options={data.options} />
-        </div>
+    return ( <
+        div className = "bg-white p-4 shadow-sm rounded-lg flex-1 my-6 dark:bg-slate-900" >
+        <
+        h2 className = "text-lg font-semibold mb-4 text-black dark:text-white" > Gráfica de Pagos e Impagos < /h2> <
+        Line data = { data }
+        options = { data.options }
+        /> <
+        /div>
     );
 };
 

@@ -23,8 +23,7 @@ const Chart = ({ netEarnings, grossEarnings, title }) => {
 
     const data = {
         labels: grossEarnings.map(pago => `${pago.month || pago.dayOfWeek}`),
-        datasets: [
-            {
+        datasets: [{
                 label: 'Ganancias brutas',
                 data: grossEarnings.map(pago => pago.grossEarnings),
                 backgroundColor: 'rgba(75, 192, 192, 0.2)',
@@ -77,11 +76,14 @@ const Chart = ({ netEarnings, grossEarnings, title }) => {
         },
     };
 
-    return (
-        <div className="bg-white p-4 shadow-sm rounded-lg flex-1 my-6 dark:bg-slate-900">
-            <h2 className="text-lg font-semibold mb-4 text-black dark:text-white">{title}</h2>
-            <Line data={data} options={options} />
-        </div>
+    return ( <
+        div className = "bg-white p-4 shadow-sm rounded-lg flex-1 my-6 dark:bg-slate-900" >
+        <
+        h2 className = "text-lg font-semibold mb-4 text-black dark:text-white" > { title } < /h2> <
+        Line data = { data }
+        options = { options }
+        /> < /
+        div >
     );
 };
 

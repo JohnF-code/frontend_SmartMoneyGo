@@ -1,26 +1,16 @@
-import { Dialog } from '@headlessui/react';
-import { GoogleMap, DirectionsService, DirectionsRenderer, useJsApiLoader } from '@react-google-maps/api';
-import { Fragment, useEffect, useState } from 'react';
-import { Transition, TransitionChild, DialogPanel, DialogTitle } from '@headlessui/react';
-
-const center = {
-  lat: 0, // Default latitude
-  lng: 0, // Default longitude
-};
-
-const libraries = ['places'];
+import { Fragment, useEffect, useState } from 'react'
+import { Dialog, Transition } from '@headlessui/react'
+import { GoogleMap, DirectionsRenderer } from '@react-google-maps/api'
 
 const containerStyle = {
-  width: '400px',
-  height: '400px',
-};
+  width: '100%',
+  height: '400px'
+}
+const center = { lat: 0, lng: 0 }
 
-const MapRoute = ({ showMap, setShowMap, destinationCoords }) => {
-    
-  // Define el array `libraries` fuera del componente para evitar recargas innecesarias
-
-  const [directions, setDirections] = useState(null);
-  const [currentLocation, setCurrentLocation] = useState(null);
+export default function MapRoute({ showMap, setShowMap, destinationCoords }) {
+  const [directions, setDirections] = useState(null)
+  const [currentLocation, setCurrentLocation] = useState(null)
 
   useEffect(() => {
     if (navigator.geolocation) {
@@ -28,90 +18,103 @@ const MapRoute = ({ showMap, setShowMap, destinationCoords }) => {
         (position) => {
           setCurrentLocation({
             lat: position.coords.latitude,
-            lng: position.coords.longitude,
-          });
+            lng: position.coords.longitude
+          })
         },
         (error) => {
-          console.error('Error fetching location', error);
+          console.error('Error fetching location', error)
         }
-      );
+      )
     }
-  }, []);
+  }, [])
 
   useEffect(() => {
-      console.log('currentLocation', currentLocation);
-      console.log('Destination', destinationCoords);
     if (currentLocation && destinationCoords) {
-      const directionsService = new window.google.maps.DirectionsService();
+      const directionsService = new window.google.maps.DirectionsService()
       directionsService.route(
         {
           origin: currentLocation,
           destination: destinationCoords,
-          travelMode: window.google.maps.TravelMode.DRIVING, // Opciones: DRIVING, WALKING, BICYCLING, TRANSIT
-          },
+          travelMode: window.google.maps.TravelMode.DRIVING
+        },
         (result, status) => {
-          if (status === window.google.maps.DirectionsStatus.OK) {
-            setDirections(result);
+          if (status === 'OK') {
+            setDirections(result)
           } else {
-            console.error('Error fetching directions', result);
+            console.error('Error fetching directions', result)
           }
         }
-      );
+      )
     }
-  }, [currentLocation, destinationCoords]);
-    return (
-        <Transition appear show={showMap} as={Fragment}>
-            <Dialog
-                open={showMap}
-                transition
-                className='fixed inset-0 flex w-screen items-center justify-center p-4 z-200'
-                onClose={() => setShowInfo(false)}
-            >
-                <TransitionChild
-                    as={Fragment}
-                    enter="ease-out duration-300"
-                    enterFrom="opacity-0"
-                    enterTo="opacity-100"
-                    leave="ease-in duration-200"
-                    leaveFrom="opacity-100"
-                    leaveTo="opacity-0"
+  }, [currentLocation, destinationCoords])
+
+  function handleClose() {
+    setShowMap(false)
+  }
+
+  return (
+    <Transition appear show={showMap} as={Fragment}>
+      <Dialog
+        as="div"
+        className="fixed inset-0 z-[9999] flex items-center justify-center p-4"
+        open={showMap}
+        onClose={handleClose}
+      >
+        {/* Overlay */}
+        <Transition.Child
+          as={Fragment}
+          enter="ease-out duration-300"
+          enterFrom="opacity-0"
+          enterTo="opacity-100"
+          leave="ease-in duration-200"
+          leaveFrom="opacity-100"
+          leaveTo="opacity-0"
+        >
+          <div className="fixed inset-0 bg-black bg-opacity-70" />
+        </Transition.Child>
+
+        <div className="relative w-full max-w-[90vw]">
+          <Transition.Child
+            as={Fragment}
+            enter="ease-out duration-300"
+            enterFrom="opacity-0 scale-90"
+            enterTo="opacity-100 scale-100"
+            leave="ease-in duration-200"
+            leaveFrom="opacity-100 scale-100"
+            leaveTo="opacity-0 scale-90"
+          >
+            <Dialog.Panel className="relative z-[9999] bg-white rounded-lg shadow dark:bg-gray-700">
+              {/* Header */}
+              <div className="flex items-center justify-between p-4 border-b dark:border-gray-600">
+                <Dialog.Title as="h2" className="text-lg font-semibold text-gray-900 dark:text-white">
+                  Ruta Del Cliente
+                </Dialog.Title>
+                <button
+                  type="button"
+                  className="
+                    w-8 h-8 text-gray-400 bg-transparent rounded-lg
+                    hover:bg-gray-200 hover:text-gray-900
+                    dark:hover:bg-gray-600 dark:hover:text-white
+                    flex items-center justify-center
+                  "
+                  onClick={handleClose}
                 >
-                    <div className="fixed inset-0 bg-black bg-opacity-70" />
-                </TransitionChild>
-                {/* Modal content */}
-                <DialogPanel className="relative z-10 bg-white rounded-lg shadow dark:bg-gray-700">
-                     {/* Modal header */}
-                    <div
-                        className="flex items-center justify-between p-4 md:p-5 border-b rounded-t dark:border-gray-600"
-                    >
-                        <DialogTitle
-                            className="text-lg font-semibold text-gray-900 dark:text-white"
-                        >
-                            Ruta Del Cliente
-                        </DialogTitle>
-                        <button
-                            type="button"
-                            className="text-gray-400 bg-transparent hover:bg-gray-200 hover:text-gray-900 rounded-lg text-sm w-8 h-8 ms-auto inline-flex justify-center items-center dark:hover:bg-gray-600 dark:hover:text-white"
-                            onClick={() => setShowMap(false)}
-                        >
-                            <svg className="w-3 h-3" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 14 14">
-                                <path stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="m1 1 6 6m0 0 6 6M7 7l6-6M7 7l-6 6"/>
-                            </svg>
-                            <span className="sr-only">Close modal</span>
-                        </button>
-                    </div>
-                    {/* Modal Body */}
-                    <GoogleMap
-                        mapContainerStyle={containerStyle}
-                        center={currentLocation || center}
-                        zoom={14}>
-                    {directions && <DirectionsRenderer directions={directions} />}
-                    </GoogleMap>
-                </DialogPanel>
-            </Dialog>
-        </Transition>
-    )
-};
+                  <span className="sr-only">Cerrar</span>
+                  &times;
+                </button>
+              </div>
 
-
-export default MapRoute
+              <GoogleMap
+                mapContainerStyle={containerStyle}
+                center={currentLocation || center}
+                zoom={14}
+              >
+                {directions && <DirectionsRenderer directions={directions} />}
+              </GoogleMap>
+            </Dialog.Panel>
+          </Transition.Child>
+        </div>
+      </Dialog>
+    </Transition>
+  )
+}
