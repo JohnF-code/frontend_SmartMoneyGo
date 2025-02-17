@@ -58,7 +58,8 @@ export default function ModalClient({ showModal, setShowModal, client, cleanClie
       setTimeout(() => showAlert(false), 3000)
       return
     }
-    await addClient({ ...data, date: new Date() }, onClose()) // Usa la fecha actual, si deseas
+    await addClient({ ...data, date: new Date() }, onClose); // Pasando la función onClose como referencia
+
 
 
     setData({ name: '', contact: '', document: '' })

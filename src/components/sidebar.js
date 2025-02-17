@@ -32,7 +32,7 @@ export default function Sidebar() {
     );
   }
 
-  const { role, name } = user;
+  const { role } = user;
 
   return (
     <aside
@@ -41,9 +41,9 @@ export default function Sidebar() {
         hidden md:block
         fixed
         top-0
-        left-5
-        w-60
-        h-50
+        left-6
+        w-30
+        h-[calc(75vh-10px)]
         bg-primary
         dark:bg-zinc-900
         shadow-2xl
@@ -53,29 +53,20 @@ export default function Sidebar() {
         transition-transform
         hover:scale-110
         p-5
+        overflow-hidden
       "
     >
       {/* Encabezado del sidebar */}
-      <div className="p-12">
-        <Link
-          href="/"
-          className="text-4xl font-bold text-[#F0F8FF] dark:text-[#F0F8FF] leading-none"
-        >
-          S.M.G
-        </Link>
-      </div>
+      
 
       {/* Menú principal */}
-      <nav
-        className="mt-0 space-y-1 overflow-y-scroll max-h-[50vh]"
-      >
+      <nav className="mt-0 space-y-1">
         {role !== "cobrador" && (
           <Link
             href="/admin/dashboard"
             className={`
-              flex items-center py-2.5 px-5 transition duration-200
-              hover:bg-secondary text-2xl
-              rounded-[0.5rem]
+              flex items-center py-1 px-5 transition duration-200
+              hover:bg-secondary text-xl rounded-[0.5rem]
               ${currentLocation === "/admin/dashboard"
                 ? "bg-white text-black animate-float"
                 : "text-white"}
@@ -89,8 +80,8 @@ export default function Sidebar() {
         <Link
           href="/admin/clientes"
           className={`
-            flex items-center py-2.5 px-5 transition duration-200
-            hover:bg-secondary text-2xl rounded-[0.5rem]
+            flex items-center py-1 px-5 transition duration-200
+            hover:bg-secondary text-xl rounded-[0.5rem]
             ${currentLocation === "/admin/clientes"
               ? "bg-white text-black animate-float"
               : "text-white"}
@@ -103,8 +94,8 @@ export default function Sidebar() {
         <Link
           href="/admin/prestamos"
           className={`
-            flex items-center py-2.5 px-5 transition duration-200
-            hover:bg-secondary text-2xl rounded-[0.5rem]
+            flex items-center py-1 px-5 transition duration-200
+            hover:bg-secondary text-xl rounded-[0.5rem]
             ${currentLocation === "/admin/prestamos"
               ? "bg-white text-black animate-float"
               : "text-white"}
@@ -117,8 +108,8 @@ export default function Sidebar() {
         <Link
           href="/admin/historial"
           className={`
-            flex items-center py-2.5 px-5 transition duration-200
-            hover:bg-secondary text-2xl rounded-[0.5rem]
+            flex items-center py-1 px-5 transition duration-200
+            hover:bg-secondary text-xl rounded-[0.5rem]
             ${currentLocation === "/admin/historial"
               ? "bg-white text-black animate-float"
               : "text-white"}
@@ -131,8 +122,8 @@ export default function Sidebar() {
         <Link
           href="/admin/pagos"
           className={`
-            flex items-center py-2.5 px-5 transition duration-200
-            hover:bg-secondary text-2xl rounded-[0.5rem]
+            flex items-center py-1 px-5 transition duration-200
+            hover:bg-secondary text-xl rounded-[0.5rem]
             ${currentLocation === "/admin/pagos"
               ? "bg-white text-black animate-float"
               : "text-white"}
@@ -146,8 +137,8 @@ export default function Sidebar() {
           <Link
             href="/admin/finanzas"
             className={`
-              flex items-center py-2.5 px-5 transition duration-200
-              hover:bg-secondary text-2xl rounded-[0.5rem]
+              flex items-center py-1 px-5 transition duration-200
+              hover:bg-secondary text-xl rounded-[0.5rem]
               ${currentLocation === "/admin/finanzas"
                 ? "bg-white text-black animate-float"
                 : "text-white"}
@@ -163,8 +154,8 @@ export default function Sidebar() {
             <Link
               href="/admin/users"
               className={`
-                flex items-center py-2.5 px-5 transition duration-200
-                hover:bg-secondary text-2xl rounded-[0.5rem]
+                flex items-center py-1 px-5 transition duration-200
+                hover:bg-secondary text-xl rounded-[0.5rem]
                 ${currentLocation === "/admin/users"
                   ? "bg-white text-black animate-float"
                   : "text-white"}
@@ -176,8 +167,8 @@ export default function Sidebar() {
             <Link
               href="/admin/rutas"
               className={`
-                flex items-center py-2.5 px-5 transition duration-200
-                hover:bg-secondary text-2xl rounded-[0.5rem]
+                flex items-center py-1 px-5 transition duration-200
+                hover:bg-secondary text-xl rounded-[0.5rem]
                 ${currentLocation === "/admin/rutas"
                   ? "bg-white text-black animate-float"
                   : "text-white"}
@@ -189,8 +180,8 @@ export default function Sidebar() {
             <Link
               href="/admin/cobradores"
               className={`
-                flex items-center py-2.5 px-5 transition duration-200
-                hover:bg-secondary text-2xl rounded-[0.5rem]
+                flex items-center py-1 px-5 transition duration-200
+                hover:bg-secondary text-xl rounded-[0.5rem]
                 ${currentLocation === "/admin/cobradores"
                   ? "bg-white text-black animate-float"
                   : "text-white"}

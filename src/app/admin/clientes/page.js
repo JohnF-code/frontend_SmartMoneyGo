@@ -8,7 +8,7 @@ import { useRouter } from "next/navigation";
 import ModalClient from "@component/components/modalClient";
 import ModalLoan from "@component/components/modalLoan";
 import ModalInfo from "@component/components/ModalInfo";
-import ModalPayments from "@component/components/modalPayments";
+import ModalPayments from "@component/components/modalPayments"; // Corregido: 'modalPayments' en lugar de 'ModalPayments'
 import NuevoPrestamoModal from "@component/components/NuevoPrestamoModal";
 import { faDownload } from "@fortawesome/free-solid-svg-icons";
 
@@ -34,6 +34,9 @@ import {
 } from "@fortawesome/free-solid-svg-icons";
 import { faWhatsapp } from "@fortawesome/free-brands-svg-icons";
 
+// Importar jsPDF para generar PDF
+import { jsPDF } from "jspdf";
+
 // Estilos + notificaciones
 import { ToastContainer } from "react-toastify";
 import { formatearFecha } from "@component/helpers";
@@ -55,9 +58,17 @@ function formatDateWithoutSeconds(datetimeStr) {
   return `${fecha} ${hh || "00"}:${mm || "00"}`;
 }
 
+// Función para generar PDF usando jsPDF
+const generatePDF = (callback) => {
+  const pdf = new jsPDF();
+  // Agrega algún contenido si es necesario:
+  pdf.text("clientes", 10, 10);
+  callback(pdf);
+};
+
 const exportToPDF = () => {
   generatePDF((pdf) => {
-    pdf.save("prestamos_activos.pdf");
+    pdf.save("clientes.pdf");
   });
 };
 
@@ -65,7 +76,7 @@ const sendViaWhatsApp = () => {
   generatePDF((pdf) => {
     const blob = pdf.output("blob");
     const formData = new FormData();
-    formData.append("pdf", blob, "prestamos_activos.pdf");
+    formData.append("pdf", blob, "clientes.pdf");
     const uploadUrl = `${process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:5000"}/api/upload`;
     const token = localStorage.getItem("token");
     fetch(uploadUrl, {
@@ -83,7 +94,7 @@ const sendViaWhatsApp = () => {
       })
       .then((data) => {
         if (data.url) {
-          const message = encodeURIComponent("Adjunto PDF de Préstamos Activos: " + data.url);
+          const message = encodeURIComponent("Adjunto PDF de clientes: " + data.url);
           window.open(`https://wa.me/?text=${message}`, "_blank");
         } else {
           alert("Error al subir el PDF");
@@ -120,8 +131,13 @@ export default function Page() {
   const itemsPerPage = 50;
   const totalPages = Math.ceil(clients.length / itemsPerPage);
 
-  // Lista de clientes a mostrar
+  // Lista de clientes a mostrar (se invierte el arreglo para que el nuevo aparezca primero)
   const [currentClients, setCurrentClients] = useState([]);
+
+  useEffect(() => {
+    const reversedClients = [...clients].reverse();
+    setCurrentClients(paginateClients(reversedClients, currentPage, itemsPerPage));
+  }, [currentPage, clients]);
 
   // Renglón resaltado o expandido
   const [highlightedRowId, setHighlightedRowId] = useState(null);
@@ -138,11 +154,6 @@ export default function Page() {
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
-
-  // Efecto: actualizar lista paginada cuando cambien clientes o currentPage
-  useEffect(() => {
-    setCurrentClients(paginateClients(clients, currentPage, itemsPerPage));
-  }, [currentPage, clients]);
 
   // Función para paginar
   function paginateClients(arr, pageNumber, pageSize) {
@@ -312,12 +323,19 @@ export default function Page() {
         </div>
 
         <div className="flex gap-4">
-          <button onClick={exportToPDF} className="flex items-center text-sm md:text-base text-black dark:text-white hover:text-primary transition-colors">
-            <FontAwesomeIcon icon={faDownload} className="mr-1" />
+          <button
+            onClick={exportToPDF}
+            className="flex items-center text-sm md:text-base text-black dark:text-white hover:text-primary transition-colors"
+          >
+            <FontAwesomeIcon icon={faDownload} className="ml-10 mr-2" />
             Descargar
           </button>
-          <button onClick={sendViaWhatsApp} className="flex items-center text-sm md:text-base text-black dark:text-white hover:text-primary transition-colors">
-            <FontAwesomeIcon icon={faWhatsapp} className="mr-1" />
+
+          <button
+            onClick={sendViaWhatsApp}
+            className="flex items-center text-sm md:text-base text-black dark:text-white hover:text-primary transition-colors"
+          >
+            <FontAwesomeIcon icon={faWhatsapp} className=" ml-6 mr-2" />
             Enviar
           </button>
         </div>
@@ -333,59 +351,38 @@ export default function Page() {
                       <tr>
                         <th
                           scope="col"
-                          className="hidden md:table-cell px-4 py-4 text-xl font-extrabold w-14"
+                          className="hidden md:table-cell px-4 py-2 text-xl font-extrabold w-14"
                         />
                         <th
                           scope="col"
-                          className="px-4 py-4 text-xl font-extrabold w-14"
+                          className="px-4 py-2 text-xl font-extrabold w-14"
                         >
                           #
                         </th>
                         <th
                           scope="col"
-                          className="md:w-[50%] py-4 text-xl font-extrabold"
+                          className="md:w-[50%] py-2 text-xl font-extrabold"
                         >
                           Nombre
                         </th>
-                        {/* Cedula */}
+                        {/* Cédula */}
                         <th
                           scope="col"
-                          className="
-                            px-2
-                            py-4
-                            text-xl
-                            font-extrabold
-                            hidden
-                            md:table-cell
-                          "
+                          className="px-2 py-2 text-xl font-extrabold hidden md:table-cell"
                         >
                           Cédula
                         </th>
                         {/* Contacto */}
                         <th
                           scope="col"
-                          className="
-                            px-2
-                            py-4
-                            text-xl
-                            font-extrabold
-                            hidden
-                            md:table-cell
-                          "
+                          className="px-2 py-2 text-xl font-extrabold hidden md:table-cell"
                         >
                           Contacto
                         </th>
                         {/* Fecha */}
                         <th
                           scope="col"
-                          className="
-                            px-2
-                            py-4
-                            text-xl
-                            font-extrabold
-                            hidden
-                            md:table-cell
-                          "
+                          className="px-2 py-2 text-xl font-extrabold hidden md:table-cell"
                         >
                           Fecha
                         </th>
@@ -415,7 +412,7 @@ export default function Page() {
                                 style={rowStyle}
                               >
                                 {/* Menú Desktop */}
-                                <td className="hidden md:table-cell px-4 py-4 align-top relative">
+                                <td className="hidden md:table-cell px-4 py-2 align-top relative">
                                   <button
                                     onClick={() =>
                                       handleToggleDesktopMenu(cli._id)
@@ -433,7 +430,7 @@ export default function Page() {
 
                                 {/* Número */}
                                 <td
-                                  className="px-4 py-4 font-extrabold text-black dark:text-white align-top whitespace-nowrap"
+                                  className="px-4 py-2 font-extrabold text-black dark:text-white align-top whitespace-nowrap"
                                   style={rowStyle}
                                   onClick={() => {
                                     // Mobile => expandir
@@ -447,7 +444,7 @@ export default function Page() {
 
                                 {/* Nombre */}
                                 <td
-                                  className="px-4 py-4 text-black dark:text-white align-top whitespace-nowrap cursor-pointer"
+                                  className="px-4 py-2 text-black dark:text-white align-top whitespace-nowrap cursor-pointer"
                                   style={rowStyle}
                                   onClick={() => {
                                     // Desktop => toggle menú
@@ -463,7 +460,7 @@ export default function Page() {
 
                                 {/* Cédula */}
                                 <td
-                                  className="hidden md:table-cell text-black dark:text-white whitespace-nowrap align-top px-2 py-4"
+                                  className="hidden md:table-cell text-black dark:text-white whitespace-nowrap align-top px-2 py-2"
                                   style={rowStyle}
                                 >
                                   {cli.document}
@@ -471,7 +468,7 @@ export default function Page() {
 
                                 {/* Contacto */}
                                 <td
-                                  className="hidden md:table-cell text-black dark:text-white whitespace-nowrap align-top px-2 py-4"
+                                  className="hidden md:table-cell text-black dark:text-white whitespace-nowrap align-top px-2 py-2"
                                   style={rowStyle}
                                 >
                                   {cli.contact}
@@ -479,7 +476,7 @@ export default function Page() {
 
                                 {/* Fecha */}
                                 <td
-                                  className="hidden md:table-cell text-black dark:text-white whitespace-nowrap align-top px-2 py-4"
+                                  className="hidden md:table-cell text-black dark:text-white whitespace-nowrap align-top px-2 py-2"
                                   style={rowStyle}
                                 >
                                   {fechaConHoraMin}
@@ -553,9 +550,7 @@ export default function Page() {
                                             }
                                             variant="primary"
                                           >
-                                            <FontAwesomeIcon
-                                              icon={faTrashCan}
-                                            />
+                                            <FontAwesomeIcon icon={faTrashCan} />
                                           </Button>
                                         </>
                                       )}
@@ -667,9 +662,7 @@ export default function Page() {
                                                 deleteClient(cli._id)
                                               }
                                             >
-                                              <FontAwesomeIcon
-                                                icon={faTrashCan}
-                                              />
+                                              <FontAwesomeIcon icon={faTrashCan} />
                                               ELIMINAR
                                             </Button>
                                           </>
